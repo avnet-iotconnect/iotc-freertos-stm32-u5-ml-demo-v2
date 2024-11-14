@@ -22,7 +22,7 @@ jobs:
 
       - name: Setup IoTConnect
         working-directory: ./iot-connect
-        run: python .\iot_connect_setup.py '${{ secrets.IOT_CONNECT_USERNAME }}' '${{ secrets.IOT_CONNECT_PASSWORD }}' '${{ secrets.IOT_CONNECT_SOLUTION_KEY }}'
+        run: python ./iot_connect_setup.py '${{ secrets.IOT_CONNECT_USERNAME }}' '${{ secrets.IOT_CONNECT_PASSWORD }}' '${{ secrets.IOT_CONNECT_SOLUTION_KEY }}'
 
   # aws_cdk:
   #   runs-on: ubuntu-latest
