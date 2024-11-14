@@ -1,0 +1,62 @@
+name: Solution Deploy
+
+on: workflow_dispatch
+
+jobs:
+  iot_connect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Setup python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Go to IoTConnect directory
+        run: cd iot-connect
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Setup IoTConnect
+        run: python .\iot_connect_setup.py '${{ secrets.IOT_CONNECT_USERNAME }}' '${{ secrets.IOT_CONNECT_PASSWORD }}' '${{ secrets.IOT_CONNECT_SOLUTION_KEY }}'
+
+  # aws_cdk:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check out code
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 2
+
+  #     - name: Setup Node.js environment
+  #       uses: actions/setup-node@v2
+  #       with:
+  #         node-version: 16
+  #         cache: "npm"
+
+  #     - name: Install dependencies
+  #       run: npm install
+
+  #     - name: Install AWS CDK
+  #       run: npm i -g aws-cdk
+
+  #     - name: Configure aws credentials
+  #       uses: aws-actions/configure-aws-credentials@master
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+  #         aws-region: ${{ secrets.AWS_REGION }}
+
+  #     - name: Synth stack
+  #       run: cdk bootstrap aws://${{ secrets.ACCOUNT_NUMBER }}/${{ secrets.AWS_REGION }} --toolkit-stack-name CDKToolkit-StMicro --qualifier stmicro
+
+  #     - name: Synth stack
+  #       run: cdk synth
+
+  #     - name: Deploy stack
+  #       run: cdk deploy --all --require-approval never

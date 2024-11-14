@@ -2,7 +2,9 @@
 
 from authentication import authenticate
 
+
 def iot_connect_setup():
+    """Perform IoTConnect solution setup"""
     access_token = authenticate()
     print("Successful login - continuation tbd.")
 

@@ -56,6 +56,7 @@ def parse_arguments() -> Credentials:
 def authenticate() -> str:
     """Get access token from IoT Connect and return it. Entrance point to this module"""
     credentials = parse_arguments()
+    print(f"Authenticate with Username: {credentials.get_username()}")
     basic_token = get_basic_token()
     headers = {
         "Content-type": "application/json",
