@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
@@ -16,14 +16,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Go to IoTConnect directory
-        run: cd iot-connect
-
       - name: Install dependencies
+        working-directory: ./iot-connect
         run: pip install -r requirements.txt
 
       - name: Setup IoTConnect
-        run: python .\iot_connect_setup.py '${{ secrets.IOT_CONNECT_USERNAME }}' '${{ secrets.IOT_CONNECT_PASSWORD }}' '${{ secrets.IOT_CONNECT_SOLUTION_KEY }}'
+        working-directory: ./iot-connect
+        env:
+          USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
+          PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
+          SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
+        run: python ./iot_connect_setup.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY"
 
   # aws_cdk:
   #   runs-on: ubuntu-latest
