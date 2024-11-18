@@ -41,6 +41,7 @@ jobs:
         with:
           node-version: 22
           cache: "npm"
+          cache-dependency-path: './demo-cdk/package-lock.json'
 
       - name: Install dependencies
         working-directory: ./demo-cdk
