@@ -58,10 +58,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Deploy cdk bootstrap stack
-        working-directory: ./demo-cdk
-        run: cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_NUMBER }}/${{ secrets.AWS_REGION }} --toolkit-stack-name CDKToolkit-StMicro --qualifier stmicro
-
       - name: Synth stack
         working-directory: ./demo-cdk
         run: cdk synth

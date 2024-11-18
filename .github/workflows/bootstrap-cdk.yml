@@ -1,0 +1,38 @@
+name: Bootstrap CDK
+
+on: workflow_dispatch
+
+jobs:
+  aws_cdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: './demo-cdk/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./demo-cdk
+        run: npm install
+
+      - name: Install AWS CDK
+        working-directory: ./demo-cdk
+        run: npm i -g aws-cdk
+
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy cdk bootstrap stack
+        working-directory: ./demo-cdk
+        run: cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_NUMBER }}/${{ secrets.AWS_REGION }} --toolkit-stack-name CDKToolkit-StMicro --qualifier stmicro
