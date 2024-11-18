@@ -28,38 +28,40 @@ jobs:
           SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
         run: python ./iot_connect_setup.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY"
 
-  # aws_cdk:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 2
+  aws_cdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
 
-  #     - name: Setup Node.js environment
-  #       uses: actions/setup-node@v2
-  #       with:
-  #         node-version: 16
-  #         cache: "npm"
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: './demo-cdk/package-lock.json'
 
-  #     - name: Install dependencies
-  #       run: npm install
+      - name: Install dependencies
+        working-directory: ./demo-cdk
+        run: npm install
 
-  #     - name: Install AWS CDK
-  #       run: npm i -g aws-cdk
+      - name: Install AWS CDK
+        working-directory: ./demo-cdk
+        run: npm i -g aws-cdk
 
-  #     - name: Configure aws credentials
-  #       uses: aws-actions/configure-aws-credentials@master
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-  #         aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-  #     - name: Synth stack
-  #       run: cdk bootstrap aws://${{ secrets.ACCOUNT_NUMBER }}/${{ secrets.AWS_REGION }} --toolkit-stack-name CDKToolkit-StMicro --qualifier stmicro
+      - name: Synth stack
+        working-directory: ./demo-cdk
+        run: cdk synth
 
-  #     - name: Synth stack
-  #       run: cdk synth
-
-  #     - name: Deploy stack
-  #       run: cdk deploy --all --require-approval never
+      - name: Deploy stack
+        working-directory: ./demo-cdk
+        run: cdk deploy --all --require-approval never
