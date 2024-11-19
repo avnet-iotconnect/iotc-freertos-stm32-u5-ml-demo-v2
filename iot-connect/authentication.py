@@ -2,7 +2,7 @@
 
 import argparse
 import requests
-from constants import API_URL, BASIC_TOKEN, LOGIN
+from constants import API_AUTH_URL, BASIC_TOKEN, LOGIN
 from check_status import check_status
 
 
@@ -29,7 +29,7 @@ class Credentials:
 
 def get_basic_token() -> str:
     """Get basic token from the IoT Connect and return it."""
-    response = requests.get(API_URL + BASIC_TOKEN)
+    response = requests.get(API_AUTH_URL + BASIC_TOKEN)
     check_status(response)
     response_json = response.json()
     # print(response_json)
@@ -68,12 +68,12 @@ def authenticate() -> str:
         "username": credentials.get_username(),
         "password": credentials.get_password()
     }
-    response = requests.post(API_URL + LOGIN, json = login_creds, headers = headers)
+    response = requests.post(API_AUTH_URL + LOGIN, json = login_creds, headers = headers)
     print(response.json())
     check_status(response)
     response_json = response.json()
     print(response_json)
-    access_token = response_json["access_token"]
+    access_token = str('Bearer %s' % response_json["access_token"])
     refresh_token = response_json["refresh_token"]
     print("access token: " + access_token)
     print("refresh token: " + refresh_token)

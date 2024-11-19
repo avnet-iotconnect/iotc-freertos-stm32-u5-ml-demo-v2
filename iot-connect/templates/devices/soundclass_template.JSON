@@ -1,0 +1,47 @@
+{
+    "code": "soundclass",
+    "name": "soundclass",
+    "authType": 2,
+    "attributes": [
+        {
+            "name": "version",
+            "type": "STRING",
+            "description": "",
+            "unit": "",
+            "aggregateTypes": []
+        },
+        {
+            "name": "class",
+            "type": "STRING",
+            "description": "",
+            "unit": "",
+            "aggregateTypes": []
+        },
+        {
+            "name": "confidence",
+            "type": "INTEGER",
+            "description": "",
+            "unit": "",
+            "aggregateTypes": []
+        },
+        {
+            "name": "request_s3",
+            "type": "BOOLEAN",
+            "description": "",
+            "unit": "",
+            "aggregateTypes": []
+        }
+    ],
+    "messageVersion": "2.1",
+    "msgCode": "43WPJCX",
+    "greenGrass": "0",
+    "wireless": "0",
+    "properties": {
+        "description": null,
+        "dataFrequency": "5",
+        "fileSupport": false
+    },
+    "_meta": {
+        "version": "2.0"
+    }
+}
