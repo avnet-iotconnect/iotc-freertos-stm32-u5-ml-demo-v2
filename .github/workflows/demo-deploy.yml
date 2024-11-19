@@ -26,7 +26,9 @@ jobs:
           USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
           PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
           SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
-        run: python ./iot_connect_setup.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY"
+          ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
+          CERTIFICATE: ${{ secrets.IOT_CONNECT_CERTIFICATE }}
+        run: python ./iot_connect_setup.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY" "$ENTITY_NAME" "$CERTIFICATE"
 
   aws_cdk:
     runs-on: ubuntu-latest
