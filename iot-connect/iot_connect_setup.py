@@ -148,12 +148,12 @@ def create_device(data: dict, access_token: str):
 
     try: 
         check_status(response)
-        print(f"Device {DEVICE_WITH_AWS_CERT} created")
+        print(f"Device {data["displayName"]} created")
     except BadHttpStatusException as e:
         response_json = response.json()
         error_type = response_json["error"][0]["param"]
         if DEVICE_ALREADY_EXISTS == error_type:
-            print(f"Device {DEVICE_WITH_AWS_CERT} already exists")
+            print(f"Device {data["displayName"]} already exists")
         else:
             raise e
 
