@@ -30,7 +30,7 @@ def iot_connect_setup():
     soundclass_temp_guid = create_device_template(access_token, DEVICE_WITH_OWN_CERT)
     create_device_with_own_certificate(args.certificate, soundclass_temp_guid, entity_guid, access_token)
     soundgen_temp_guid = create_device_template(access_token, DEVICE_WITH_AWS_CERT)
-    create_device_with_aws_certificate(args.certificate, soundgen_temp_guid, entity_guid, access_token)
+    create_device_with_aws_certificate(soundgen_temp_guid, entity_guid, access_token)
 
 def parse_arguments() -> argparse.Namespace:
     """
@@ -126,7 +126,7 @@ def create_device_with_own_certificate(certificate: str, soundclass_temp_guid: s
     }
     create_device(data, access_token)
 
-def create_device_with_aws_certificate(certificate: str, soundclass_temp_guid: str, entity_guid: str, access_token: str):
+def create_device_with_aws_certificate(soundclass_temp_guid: str, entity_guid: str, access_token: str):
     """Create device with aws certificate in IoTConnect"""
     data = {
         "entityGuid": entity_guid,
