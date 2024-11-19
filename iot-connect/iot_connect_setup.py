@@ -25,8 +25,8 @@ def iot_connect_setup():
     args = parse_arguments()
     """Perform IoTConnect solution setup"""
     access_token = authenticate(args)
-    entity_guid = get_entity_guid(args.entity_name, access_token)
     print("Successful login - now create device templates.")
+    entity_guid = get_entity_guid(args.entity_name, access_token)
     soundclass_temp_guid = create_device_templates(access_token, DEVICE_WITH_OWN_CERT)
     create_device_with_own_certificate(args.certificate, soundclass_temp_guid, entity_guid, access_token)
     soundgen_temp_guid = create_device_templates(access_token, DEVICE_WITH_AWS_CERT)
