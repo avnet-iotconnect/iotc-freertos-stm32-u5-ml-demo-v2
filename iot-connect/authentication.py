@@ -37,25 +37,20 @@ def get_basic_token() -> str:
     print("Basic token: " + basic_token)
     return basic_token
 
-def parse_arguments() -> Credentials:
+def get_credentials(args: argparse.Namespace) -> Credentials:
     """
-    Parse CLI arguments - 3 obligatory positional argiments
+    Get credentials from CLI arguments
      - username
      - password
      - solution key
     """
     print("Parse command line arguments")
-    parser=argparse.ArgumentParser()
-    parser.add_argument("username")
-    parser.add_argument("password")
-    parser.add_argument("solution_key")
-    args = parser.parse_args()
     credentials = Credentials(args.username, args.password, args.solution_key)
     return credentials
 
-def authenticate() -> str:
+def authenticate(args: argparse.Namespace) -> str:
     """Get access token from IoT Connect and return it. Entrance point to this module"""
-    credentials = parse_arguments()
+    credentials = get_credentials(args)
     print(f"Authenticate with Username which starts with: {credentials.get_username()[:5]}")
     basic_token = get_basic_token()
     headers = {
@@ -69,13 +64,10 @@ def authenticate() -> str:
         "password": credentials.get_password()
     }
     response = requests.post(API_AUTH_URL + LOGIN, json = login_creds, headers = headers)
-    print(response.json())
     check_status(response)
     response_json = response.json()
-    print(response_json)
     access_token = str('Bearer %s' % response_json["access_token"])
     refresh_token = response_json["refresh_token"]
-    print("access token: " + access_token)
     print("refresh token: " + refresh_token)
     print("Successful authentication. Access Token:\r\n" + access_token)
     return access_token
