@@ -4,7 +4,7 @@ import {
     aws_logs,
     aws_codebuild
 } from 'aws-cdk-lib';
-import { EventAction, FilterGroup, ComputeType } from "aws-cdk-lib/aws-codebuild";
+import { CfnProject, Project, Source, FilterGroup, EventAction, ComputeType } from "aws-cdk-lib/aws-codebuild";
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as iot from 'aws-cdk-lib/aws-iot';
 
@@ -13,13 +13,13 @@ export class FWBuildConstruct extends Construct {
         super(scope, id);
 
         // Fix hardcoded values
-        const build = new aws_codebuild.Project(this, 'FWBuild', {
+        const fwBuild = new aws_codebuild.Project(this, 'FWBuild', {
             projectName: "AvnetStm32FWBuild",
             source: aws_codebuild.Source.gitHub({
               owner: "avnet-iotconnect",
               repo: "iotc-freertos-stm32-u5-ml-demo-v2",
               webhook: true,
-              webhookFilters: [FilterGroup.inEventOf(EventAction.WORKFLOW_JOB_QUEUED)],
+              webhookFilters: [FilterGroup.inEventOf(EventAction.PULL_REQUEST_CREATED)],
             }),
             environment: {
               buildImage: aws_codebuild.LinuxBuildImage.fromDockerRegistry(
@@ -33,5 +33,16 @@ export class FWBuildConstruct extends Construct {
               },
             },
           });
+        
+        const cfnProject = fwBuild.node.defaultChild as CfnProject
+        const triggers = cfnProject.triggers as CfnProject.ProjectTriggersProperty
+        const filterGroups = triggers.filterGroups as CfnProject.WebhookFilterProperty[][]
+        // remove wrong (PULL_REQUEST_CREATED) filter
+        filterGroups[0].pop()
+        // add correct (WORKFLOW_JOB_QUEUED) filter
+        filterGroups[0].push({
+            type: 'EVENT',
+            pattern: 'WORKFLOW_JOB_QUEUED',
+        })
     }
 }
