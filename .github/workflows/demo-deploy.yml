@@ -69,7 +69,10 @@ jobs:
           IOTCON_PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
           IOTCON_SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
           IOTCON_ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
-        run: cdk synth --context stUsername="$ST_USERNAME" --context stPassword="$ST_PASSWORD" --context iotConnectUsername="$IOTCON_USERNAME" --context iotConnectPassword="$IOTCON_PASSWORD" --context iotConnectSolutionKey="$IOTCON_SOLUTION_KEY" --context iotConnectEntity="$IOTCON_ENTITY_NAME"
+          GIT_OWNER: ${{ secrets.GIT_OWNER }}
+          GIT_REPO: ${{ secrets.GIT_REPOSITORY }}
+          GIT_ARN: ${{ secrets.GIT_ARN }}
+        run: cdk synth --context stUsername="$ST_USERNAME" --context stPassword="$ST_PASSWORD" --context iotConnectUsername="$IOTCON_USERNAME" --context iotConnectPassword="$IOTCON_PASSWORD" --context iotConnectSolutionKey="$IOTCON_SOLUTION_KEY" --context iotConnectEntity="$IOTCON_ENTITY_NAME" --context gitOwner="$GIT_OWNER" --context gitRepo="$GIT_REPOSITORY" --context gitArn="$GIT_ARN"
 
       - name: Deploy stack
         working-directory: ./demo-cdk
@@ -80,4 +83,7 @@ jobs:
           IOTCON_PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
           IOTCON_SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
           IOTCON_ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
-        run: cdk deploy --all --require-approval never --context stUsername="$ST_USERNAME" --context stPassword="$ST_PASSWORD" --context iotConnectUsername="$IOTCON_USERNAME" --context iotConnectPassword="$IOTCON_PASSWORD" --context iotConnectSolutionKey="$IOTCON_SOLUTION_KEY" --context iotConnectEntity="$IOTCON_ENTITY_NAME"
+          GIT_OWNER: ${{ secrets.GIT_OWNER }}
+          GIT_REPO: ${{ secrets.GIT_REPOSITORY }}
+          GIT_ARN: ${{ secrets.GIT_ARN }}
+        run: cdk deploy --all --require-approval never --context stUsername="$ST_USERNAME" --context stPassword="$ST_PASSWORD" --context iotConnectUsername="$IOTCON_USERNAME" --context iotConnectPassword="$IOTCON_PASSWORD" --context iotConnectSolutionKey="$IOTCON_SOLUTION_KEY" --context iotConnectEntity="$IOTCON_ENTITY_NAME" --context gitOwner="$GIT_OWNER" --context gitRepo="$GIT_REPOSITORY" --context gitArn="$GIT_ARN"
