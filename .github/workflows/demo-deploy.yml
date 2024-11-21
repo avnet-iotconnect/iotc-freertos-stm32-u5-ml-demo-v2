@@ -73,4 +73,4 @@ jobs:
 
       - name: Deploy stack
         working-directory: ./demo-cdk
-        run: cdk deploy --all --require-approval never
+        run: cdk deploy --all --require-approval never --context stUsername="$ST_USERNAME" --context stPassword="$STDEVCLOUD_PASSWORD" --context iotConnectUsername="$IOT_CONNECT_USERNAME" --context iotConnectPassword="$IOT_CONNECT_PASSWORD" --context iotConnectSolutionKey="$IOT_CONNECT_SOLUTION_KEY" --context iotConnectEntity="$IOT_CONNECT_ENTITY_NAME"
