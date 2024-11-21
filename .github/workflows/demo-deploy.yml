@@ -66,4 +66,11 @@ jobs:
 
       - name: Deploy stack
         working-directory: ./demo-cdk
-        run: cdk deploy --all --require-approval never
+        env:
+          ST_USERNAME: ${{ secrets.STDEVCLOUD_USERNAME }}
+          ST_PASSWORD: ${{ secrets.STDEVCLOUD_PASSWORD }}
+          IOTCON_USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
+          IOTCON_PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
+          IOTCON_SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
+          IOTCON_ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
+        run: cdk deploy --all --require-approval never --parameters stUsername="$ST_USERNAME" --parameters stPassword="$STDEVCLOUD_PASSWORD" --parameters iotConnectUsername="$IOT_CONNECT_USERNAME" --parameters iotConnectPassword="$IOT_CONNECT_PASSWORD" --parameters iotConnectSolutionKey="$IOT_CONNECT_SOLUTION_KEY" --parameters iotConnectEntity="$IOT_CONNECT_ENTITY_NAME"

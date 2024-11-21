@@ -32,6 +32,10 @@ export class SecretsConstruct extends Construct {
             type: "String",
             description: "The IoTConnect solution key"});
 
+        const iotConnectEntity = new CfnParameter(this, "iotConnectEntity", {
+            type: "String",
+            description: "The IoTConnect Entity"});
+
         new aws_secretsmanager.Secret(this, 'stUsernameSecret', {
             secretName: config.stUsernameSecret,
             secretStringValue: SecretValue.unsafePlainText(stUsername.valueAsString),
@@ -55,6 +59,11 @@ export class SecretsConstruct extends Construct {
         new aws_secretsmanager.Secret(this, 'iotConnectSolutionKeySecret', {
             secretName: config.iotConnectSolutionKeySecret,
             secretStringValue: SecretValue.unsafePlainText(iotConnectSolutionKey.valueAsString),
+        });
+
+        new aws_secretsmanager.Secret(this, 'iotConnectEntitySecret', {
+            secretName: config.iotConnectEntitySecret,
+            secretStringValue: SecretValue.unsafePlainText(iotConnectEntity.valueAsString),
         });
     }
 }

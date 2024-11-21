@@ -22,7 +22,8 @@
       "stPasswordSecret": "STDEVCLOUD_PASSWORD_SECRET",
       "iotConnectUsernameSecret": "IOTCONNECT_USERNAME_SECRET",
       "iotConnectPasswordSecret": "IOTCONNECT_PASSWORD_SECRET",
-      "iotConnectSolutionKeySecret": "IOTCONNECT_SOLUTIONKEY_SECRET"
+      "iotConnectSolutionKeySecret": "IOTCONNECT_SOLUTIONKEY_SECRET",
+      "iotConnectEntitySecret": "IOTCONNECT_ENTITY_SECRET"
     },
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
