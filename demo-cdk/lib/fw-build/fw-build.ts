@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import {
+    aws_iam,
     aws_logs,
     aws_codebuild
 } from 'aws-cdk-lib';
@@ -12,8 +13,13 @@ export class FWBuildConstruct extends Construct {
     constructor(scope: Construct, id: string) {
         super(scope, id);
 
+        const fwBuildRole = new iam.Role(this, 'Role', {
+            assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),   // required
+        });
+
         // Fix hardcoded values
-        const build = new aws_codebuild.Project(this, 'FWBuild', {
+        const fwBuild = new aws_codebuild.Project(this, 'FWBuild', {
+            role: fwBuildRole,
             projectName: "AvnetStm32FWBuild",
             source: aws_codebuild.Source.gitHub({
               owner: "avnet-iotconnect",
@@ -33,5 +39,15 @@ export class FWBuildConstruct extends Construct {
               },
             },
           });
+
+        fwBuild.role?.addManagedPolicy(
+            aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSageMakerFullAccess')
+        );
+
+        fwBuildRole.addToPolicy(new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            resources: ["*"],
+            actions: ["codeconnections:GetConnectionToken", "codeconnections:GetConnection"],
+        }));
     }
 }
