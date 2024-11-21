@@ -73,4 +73,4 @@ jobs:
           IOTCON_PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
           IOTCON_SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
           IOTCON_ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
-        run: cdk deploy --all --require-approval never --parameters stUsername="$ST_USERNAME" --parameters stPassword="$STDEVCLOUD_PASSWORD" --parameters iotConnectUsername="$IOT_CONNECT_USERNAME" --parameters iotConnectPassword="$IOT_CONNECT_PASSWORD" --parameters iotConnectSolutionKey="$IOT_CONNECT_SOLUTION_KEY" --parameters iotConnectEntity="$IOT_CONNECT_ENTITY_NAME"
+        run: cdk deploy --all --require-approval never --parameters SecretsConstruct:stUsername="$ST_USERNAME" --parameters SecretsConstruct:stPassword="$STDEVCLOUD_PASSWORD" --parameters SecretsConstruct:iotConnectUsername="$IOT_CONNECT_USERNAME" --parameters SecretsConstruct:iotConnectPassword="$IOT_CONNECT_PASSWORD" --parameters SecretsConstruct:iotConnectSolutionKey="$IOT_CONNECT_SOLUTION_KEY" --parameters SecretsConstruct:iotConnectEntity="$IOT_CONNECT_ENTITY_NAME"
