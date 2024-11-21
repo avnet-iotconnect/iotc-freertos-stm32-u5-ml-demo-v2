@@ -69,8 +69,15 @@ jobs:
           IOTCON_PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
           IOTCON_SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
           IOTCON_ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
-        run: cdk synth --context stUsername="$ST_USERNAME" --context stPassword="$STDEVCLOUD_PASSWORD" --context iotConnectUsername="$IOT_CONNECT_USERNAME" --context iotConnectPassword="$IOT_CONNECT_PASSWORD" --context iotConnectSolutionKey="$IOT_CONNECT_SOLUTION_KEY" --context iotConnectEntity="$IOT_CONNECT_ENTITY_NAME"
+        run: cdk synth --context stUsername="$ST_USERNAME" --context stPassword="$ST_PASSWORD" --context iotConnectUsername="$IOTCON_USERNAME" --context iotConnectPassword="$IOTCON_PASSWORD" --context iotConnectSolutionKey="$IOTCON_SOLUTION_KEY" --context iotConnectEntity="$IOTCON_ENTITY_NAME"
 
       - name: Deploy stack
         working-directory: ./demo-cdk
-        run: cdk deploy --all --require-approval never --context stUsername="$ST_USERNAME" --context stPassword="$STDEVCLOUD_PASSWORD" --context iotConnectUsername="$IOT_CONNECT_USERNAME" --context iotConnectPassword="$IOT_CONNECT_PASSWORD" --context iotConnectSolutionKey="$IOT_CONNECT_SOLUTION_KEY" --context iotConnectEntity="$IOT_CONNECT_ENTITY_NAME"
+        env:
+          ST_USERNAME: ${{ secrets.STDEVCLOUD_USERNAME }}
+          ST_PASSWORD: ${{ secrets.STDEVCLOUD_PASSWORD }}
+          IOTCON_USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
+          IOTCON_PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
+          IOTCON_SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
+          IOTCON_ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
+        run: cdk deploy --all --require-approval never --context stUsername="$ST_USERNAME" --context stPassword="$ST_PASSWORD" --context iotConnectUsername="$IOTCON_USERNAME" --context iotConnectPassword="$IOTCON_PASSWORD" --context iotConnectSolutionKey="$IOTCON_SOLUTION_KEY" --context iotConnectEntity="$IOTCON_ENTITY_NAME"
