@@ -9,7 +9,7 @@ on: workflow_dispatch
 
 jobs:
   iot_connect:
-    runs-on: ubuntu-latest
+    runs-on: codebuild-AvnetStm32FWBuild-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -21,9 +21,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      # - name: Build Firmware TBD
-      #   working-directory: ./tbd
-      #   run: TBD
+      - name: Build Firmware
+        run: echo "Hello World! Build Firmware!"
 
       - name: Install dependencies
         working-directory: ./iot-connect
