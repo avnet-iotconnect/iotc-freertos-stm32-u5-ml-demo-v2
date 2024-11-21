@@ -19,32 +19,32 @@ export class SecretsConstruct extends Construct {
 
         new aws_secretsmanager.Secret(this, 'stUsernameSecret', {
             secretName: config.stUsernameSecret,
-            secretStringValue: stUsername,
+            secretStringValue: SecretValue.unsafePlainText(stUsername),
         });
 
         new aws_secretsmanager.Secret(this, 'stPasswordSecret', {
             secretName: config.stPasswordSecret,
-            secretStringValue: stPassword,
+            secretStringValue: SecretValue.unsafePlainText(stPassword),
         });
 
         new aws_secretsmanager.Secret(this, 'iotConnectUsernameSecret', {
             secretName: config.iotConnectUsernameSecret,
-            secretStringValue: iotConnectUsername,
+            secretStringValue: SecretValue.unsafePlainText(iotConnectUsername),
         });
 
         new aws_secretsmanager.Secret(this, 'iotConnectPasswordSecret', {
             secretName: config.iotConnectPasswordSecret,
-            secretStringValue: iotConnectPassword,
+            secretStringValue: SecretValue.unsafePlainText(iotConnectPassword),
         });
 
         new aws_secretsmanager.Secret(this, 'iotConnectSolutionKeySecret', {
             secretName: config.iotConnectSolutionKeySecret,
-            secretStringValue: iotConnectSolutionKey,
+            secretStringValue: SecretValue.unsafePlainText(iotConnectSolutionKey),
         });
 
         new aws_secretsmanager.Secret(this, 'iotConnectEntitySecret', {
             secretName: config.iotConnectEntitySecret,
-            secretStringValue: iotConnectEntity,
+            secretStringValue: SecretValue.unsafePlainText(iotConnectEntity),
         });
     }
 }
