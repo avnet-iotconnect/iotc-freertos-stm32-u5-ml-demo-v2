@@ -16,9 +16,6 @@ export class SecretsConstruct extends Construct {
         const iotConnectPassword = this.node.tryGetContext('iotConnectPassword');
         const iotConnectSolutionKey = this.node.tryGetContext('iotConnectSolutionKey');
         const iotConnectEntity = this.node.tryGetContext('iotConnectEntity');
-        const gitOwner = this.node.tryGetContext('gitOwner');
-        const gitRepo = this.node.tryGetContext('gitRepo');
-        const gitArn = this.node.tryGetContext('gitArn');
 
         new aws_secretsmanager.Secret(this, 'stUsernameSecret', {
             secretName: config.stUsernameSecret,
@@ -48,21 +45,6 @@ export class SecretsConstruct extends Construct {
         new aws_secretsmanager.Secret(this, 'iotConnectEntitySecret', {
             secretName: config.iotConnectEntitySecret,
             secretStringValue: SecretValue.unsafePlainText(iotConnectEntity),
-        });
-
-        new aws_secretsmanager.Secret(this, 'gitOwnerSecret', {
-            secretName: config.gitOwnerSecret,
-            secretStringValue: SecretValue.unsafePlainText(gitOwner),
-        });
-
-        new aws_secretsmanager.Secret(this, 'gitRepoSecret', {
-            secretName: config.gitRepoSecret,
-            secretStringValue: SecretValue.unsafePlainText(gitRepo),
-        });
-
-        new aws_secretsmanager.Secret(this, 'gitArnSecret', {
-            secretName: config.gitArnSecret,
-            secretStringValue: SecretValue.unsafePlainText(gitArn),
         });
     }
 }

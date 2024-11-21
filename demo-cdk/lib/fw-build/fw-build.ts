@@ -13,12 +13,16 @@ export class FWBuildConstruct extends Construct {
     constructor(scope: Construct, id: string) {
         super(scope, id);
 
+        const gitOwner = this.node.tryGetContext('gitOwner');
+        const gitRepo = this.node.tryGetContext('gitRepo');
+        const gitArn = this.node.tryGetContext('gitArn');
+
         // Fix hardcoded values
         const fwBuild = new aws_codebuild.Project(this, 'FWBuild', {
             projectName: "AvnetStm32FWBuild",
             source: aws_codebuild.Source.gitHub({
-              owner: "avnet-iotconnect",
-              repo: "iotc-freertos-stm32-u5-ml-demo-v2",
+              owner: gitOwner,
+              repo: gitRepo,
               webhook: true,
               webhookFilters: [FilterGroup.inEventOf(EventAction.WORKFLOW_JOB_QUEUED)],
             }),
@@ -39,14 +43,14 @@ export class FWBuildConstruct extends Construct {
 
         // fwBuild.addToRolePolicy(new iam.PolicyStatement({
         //     effect: iam.Effect.ALLOW,
-        //     resources: ["arn:aws:codeconnections:us-west-1:857898724229:connection/2066930f-f11e-4485-8548-5c37c2ec2aa0"],
+        //     resources: [gitArn],
         //     actions: ["codeconnections:GetConnectionToken", "codeconnections:GetConnection"],
         // }));
 
         // (fwBuild.node.defaultChild as CfnProject).addPropertyOverride('Source.Auth', {
         //     Type: 'CODECONNECTIONS',
         //     Resource:
-        //         'arn:aws:codeconnections:us-west-1:857898724229:connection/2066930f-f11e-4485-8548-5c37c2ec2aa0',
+        //         gitArn,
         // })
     }
 }

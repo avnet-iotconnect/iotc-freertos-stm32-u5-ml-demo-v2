@@ -23,10 +23,7 @@
       "iotConnectUsernameSecret": "IOTCONNECT_USERNAME_SECRET",
       "iotConnectPasswordSecret": "IOTCONNECT_PASSWORD_SECRET",
       "iotConnectSolutionKeySecret": "IOTCONNECT_SOLUTIONKEY_SECRET",
-      "iotConnectEntitySecret": "IOTCONNECT_ENTITY_SECRET",
-      "gitOwnerSecret": "GIT_OWNER_SECRET",
-      "gitRepoSecret": "GIT_REPOSITORY_SECRET",
-      "gitArnSecret": "GIT_ARN_SECRET"
+      "iotConnectEntitySecret": "IOTCONNECT_ENTITY_SECRET"
     },
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
