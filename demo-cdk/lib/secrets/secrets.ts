@@ -10,60 +10,41 @@ export class SecretsConstruct extends Construct {
     constructor(scope: Construct, id: string) {
         super(scope, id);
         const config = this.node.tryGetContext('config');
-
-        // Define CfnParameters for secrets
-        const stUsername = new CfnParameter(this, "stUsername", {
-            type: "String",
-            description: "The ST Dev Cloud username"});
-
-        const stPassword = new CfnParameter(this, "stPassword", {
-            type: "String",
-            description: "The ST Dev Cloud password"});
-
-        const iotConnectUsername = new CfnParameter(this, "iotConnectUsername", {
-            type: "String",
-            description: "The IoTConnect username"});
-
-        const iotConnectPassword= new CfnParameter(this, "iotConnectPassword", {
-            type: "String",
-            description: "The IoTConnect password"});
-
-        const iotConnectSolutionKey = new CfnParameter(this, "iotConnectSolutionKey", {
-            type: "String",
-            description: "The IoTConnect solution key"});
-
-        const iotConnectEntity = new CfnParameter(this, "iotConnectEntity", {
-            type: "String",
-            description: "The IoTConnect Entity"});
+        const stUsername = this.node.tryGetContext('stUsername');
+        const stPassword = this.node.tryGetContext('stPassword');
+        const iotConnectUsername = this.node.tryGetContext('iotConnectUsername');
+        const iotConnectPassword = this.node.tryGetContext('iotConnectPassword');
+        const iotConnectSolutionKey = this.node.tryGetContext('iotConnectSolutionKey');
+        const iotConnectEntity = this.node.tryGetContext('iotConnectEntity');
 
         new aws_secretsmanager.Secret(this, 'stUsernameSecret', {
             secretName: config.stUsernameSecret,
-            secretStringValue: SecretValue.unsafePlainText(stUsername.valueAsString),
+            secretStringValue: stUsername,
         });
 
         new aws_secretsmanager.Secret(this, 'stPasswordSecret', {
             secretName: config.stPasswordSecret,
-            secretStringValue: SecretValue.unsafePlainText(stPassword.valueAsString),
+            secretStringValue: stPassword,
         });
 
         new aws_secretsmanager.Secret(this, 'iotConnectUsernameSecret', {
             secretName: config.iotConnectUsernameSecret,
-            secretStringValue: SecretValue.unsafePlainText(iotConnectUsername.valueAsString),
+            secretStringValue: iotConnectUsername,
         });
 
         new aws_secretsmanager.Secret(this, 'iotConnectPasswordSecret', {
             secretName: config.iotConnectPasswordSecret,
-            secretStringValue: SecretValue.unsafePlainText(iotConnectPassword.valueAsString),
+            secretStringValue: iotConnectPassword,
         });
 
         new aws_secretsmanager.Secret(this, 'iotConnectSolutionKeySecret', {
             secretName: config.iotConnectSolutionKeySecret,
-            secretStringValue: SecretValue.unsafePlainText(iotConnectSolutionKey.valueAsString),
+            secretStringValue: iotConnectSolutionKey,
         });
 
         new aws_secretsmanager.Secret(this, 'iotConnectEntitySecret', {
             secretName: config.iotConnectEntitySecret,
-            secretStringValue: SecretValue.unsafePlainText(iotConnectEntity.valueAsString),
+            secretStringValue: iotConnectEntity,
         });
     }
 }
