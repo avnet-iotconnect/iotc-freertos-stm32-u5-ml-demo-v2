@@ -41,7 +41,7 @@ export class FWBuildConstruct extends Construct {
 
         fwBuild.addToRolePolicy(new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
-            resources: ["*"],
+            resources: ["arn:aws:codeconnections:us-west-1:857898724229:connection/2066930f-f11e-4485-8548-5c37c2ec2aa0"],
             actions: ["codeconnections:GetConnectionToken", "codeconnections:GetConnection"],
         }));
 
