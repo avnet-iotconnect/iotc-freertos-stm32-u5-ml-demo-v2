@@ -5,7 +5,7 @@ import {
     aws_logs,
     aws_codebuild
 } from 'aws-cdk-lib';
-import { EventAction, FilterGroup, ComputeType } from "aws-cdk-lib/aws-codebuild";
+import { CfnProject, EventAction, FilterGroup, ComputeType } from "aws-cdk-lib/aws-codebuild";
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as iot from 'aws-cdk-lib/aws-iot';
 
@@ -13,13 +13,8 @@ export class FWBuildConstruct extends Construct {
     constructor(scope: Construct, id: string) {
         super(scope, id);
 
-        const fwBuildRole = new iam.Role(this, 'Role', {
-            assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),   // required
-        });
-
         // Fix hardcoded values
         const fwBuild = new aws_codebuild.Project(this, 'FWBuild', {
-            role: fwBuildRole,
             projectName: "AvnetStm32FWBuild",
             source: aws_codebuild.Source.gitHub({
               owner: "avnet-iotconnect",
@@ -44,10 +39,16 @@ export class FWBuildConstruct extends Construct {
             aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSageMakerFullAccess')
         );
 
-        fwBuildRole.addToPolicy(new iam.PolicyStatement({
+        fwBuild.addToRolePolicy(new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
-            resources: ["arn:aws:codeconnections:us-west-1:857898724229:connection/2066930f-f11e-4485-8548-5c37c2ec2aa0"],
+            resources: ["*"],
             actions: ["codeconnections:GetConnectionToken", "codeconnections:GetConnection"],
         }));
+
+        (fwBuild.node.defaultChild as CfnProject).addPropertyOverride('Source.Auth', {
+            Type: 'CODECONNECTIONS',
+            Resource:
+                'arn:aws:codeconnections:us-west-1:857898724229:connection/2066930f-f11e-4485-8548-5c37c2ec2aa0',
+        })
     }
 }
