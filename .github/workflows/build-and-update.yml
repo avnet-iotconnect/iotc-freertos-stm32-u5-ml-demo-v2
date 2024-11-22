@@ -8,7 +8,7 @@ on: workflow_dispatch
 #     branches: ["main"]
 
 jobs:
-  iot_connect:
+  fw_build:
     runs-on: codebuild-AvnetStm32FWBuild-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out code
