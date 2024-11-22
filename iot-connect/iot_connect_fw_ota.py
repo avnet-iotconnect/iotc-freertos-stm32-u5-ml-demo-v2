@@ -19,7 +19,8 @@ from constants import (
     API_USER_URL,
     FW_OTA_FILE,
     API_FW_URL,
-    FW_ADD
+    FW_ADD,
+    FW_PREFIX
 )
 from check_status import check_status, BadHttpStatusException
 from common import (
@@ -55,10 +56,11 @@ def parse_arguments() -> argparse.Namespace:
 
 def create_firmware(device_template_guid: str, access_token: str, fw_version: str) -> str:
     """Create new firmware in IoTConnect"""
+    firmwareName = FW_PREFIX + fw_version.replace('.', '')
     data = {
         "deviceTemplateGuid": device_template_guid,
         "software": fw_version,
-        "firmwareName": "DEVICE_WITH_SOUND_CLASS_" + fw_version,
+        "firmwareName": firmwareName,
         "hardware": "1.0.0"
     }
 
@@ -72,7 +74,7 @@ def create_firmware(device_template_guid: str, access_token: str, fw_version: st
     response_json = response.json()
     guid = response_json["data"][0]["firmwareUpgradeGuid"]
 
-    print(f"Firmware {data["firmwareName"]} created with guid {guid}")
+    print(f"Firmware {firmwareName} created with guid {guid}")
     return guid
 
 

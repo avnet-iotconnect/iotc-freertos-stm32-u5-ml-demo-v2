@@ -27,3 +27,4 @@ DEVICE_TEMPLATE_ALREADY_EXISTS = "DeviceTemplateNameAlreadyExists"
 DEVICE_ALREADY_EXISTS = "UniqueIdAlreadyExists"
 
 FW_OTA_FILE = "ota/fw.bin"
+FW_PREFIX = "SCLASS"
