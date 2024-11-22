@@ -9,35 +9,37 @@ on: workflow_dispatch
 
 jobs:
   fw_build:
-    runs-on: codebuild-AvnetStm32FWBuild-${{ github.run_id }}-${{ github.run_attempt }}
+    # runs-on: codebuild-AvnetStm32FWBuild-${{ github.run_id }}-${{ github.run_attempt }}
+    runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: Setup tools
-        run: ./scripts/setup-project.sh
+      # - name: Setup tools
+      #   run: ./scripts/setup-project.sh
 
-      - name: Build Firmware
-        working-directory: ./stm32
-        run: |
-          /opt/st/stm32cubeide_1.12.1/headless-build.sh -data . -import Projects/b_u585i_iot02a_ntz -build b_u585i_iot02a_ntz
-          ls Projects/b_u585i_iot02a_ntz/Debug/
+      # - name: Build Firmware
+      #   working-directory: ./stm32
+      #   run: |
+      #     /opt/st/stm32cubeide_1.12.1/headless-build.sh -data . -import Projects/b_u585i_iot02a_ntz -build b_u585i_iot02a_ntz
+      #     ls Projects/b_u585i_iot02a_ntz/Debug/
 
-      # - name: Setup python environment
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: '3.12'
+      - name: Setup python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      # - name: Install dependencies
-      #   working-directory: ./iot-connect
-      #   run: pip install -r requirements.txt
+      - name: Install dependencies
+        working-directory: ./iot-connect
+        run: pip install -r requirements.txt
 
-      # - name: Create OTA update
-      #   working-directory: ./iot-connect
-      #   env:
-      #     USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
-      #     PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
-      #     SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
-      #   run: echo "TBD"
+      - name: Create OTA update
+        working-directory: ./iot-connect
+        env:
+          USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
+          PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
+          SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
+          ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
+        run: python ./iot_connect_fw_ota.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY" "$ENTITY_NAME"
