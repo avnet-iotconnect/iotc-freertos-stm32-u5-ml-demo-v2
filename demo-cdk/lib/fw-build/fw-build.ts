@@ -39,18 +39,18 @@ export class FWBuildConstruct extends Construct {
             },
           });
         
-        fwBuild.role!.addManagedPolicy(aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'));
+        // fwBuild.role!.addManagedPolicy(aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'));
 
-        // fwBuild.addToRolePolicy(new iam.PolicyStatement({
-        //     effect: iam.Effect.ALLOW,
-        //     resources: [gitArn],
-        //     actions: ["codeconnections:GetConnectionToken", "codeconnections:GetConnection"],
-        // }));
+        fwBuild.addToRolePolicy(new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            resources: [gitArn],
+            actions: ["codeconnections:GetConnectionToken", "codeconnections:GetConnection"],
+        }));
 
-        // (fwBuild.node.defaultChild as CfnProject).addPropertyOverride('Source.Auth', {
-        //     Type: 'CODECONNECTIONS',
-        //     Resource:
-        //         gitArn,
-        // })
+        (fwBuild.node.defaultChild as CfnProject).addPropertyOverride('Source.Auth', {
+            Type: 'CODECONNECTIONS',
+            Resource:
+                gitArn,
+        })
     }
 }
