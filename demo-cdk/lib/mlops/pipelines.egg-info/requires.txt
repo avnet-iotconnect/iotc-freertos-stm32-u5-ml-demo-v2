@@ -1,0 +1,15 @@
+sagemaker==2.228.0
+PyYAML~=6.0
+awscli>1.20.30
+boto3==1.35.0
+
+[test]
+black
+coverage
+flake8
+mock
+pydocstyle
+pytest
+pytest-cov
+sagemaker
+tox
