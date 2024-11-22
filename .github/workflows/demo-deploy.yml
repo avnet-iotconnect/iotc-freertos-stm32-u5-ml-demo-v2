@@ -70,7 +70,7 @@ jobs:
           IOTCON_SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
           IOTCON_ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
           GIT_ARN: ${{ secrets.GIT_ARN }}
-        run: cdk synth --context stUsername="$ST_USERNAME" --context stPassword="$ST_PASSWORD" --context iotConnectUsername="$IOTCON_USERNAME" --context iotConnectPassword="$IOTCON_PASSWORD" --context iotConnectSolutionKey="$IOTCON_SOLUTION_KEY" --context iotConnectEntity="$IOTCON_ENTITY_NAME" --context gitOwner="$GITHUB_REPOSITORY_OWNER"" --context gitRepo="${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}" --context gitArn="$GIT_ARN"
+        run: cdk synth --context stUsername="$ST_USERNAME" --context stPassword="$ST_PASSWORD" --context iotConnectUsername="$IOTCON_USERNAME" --context iotConnectPassword="$IOTCON_PASSWORD" --context iotConnectSolutionKey="$IOTCON_SOLUTION_KEY" --context iotConnectEntity="$IOTCON_ENTITY_NAME" --context gitOwner="$GITHUB_REPOSITORY_OWNER" --context gitRepo="${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}" --context gitArn="$GIT_ARN"
 
       - name: Deploy stack
         working-directory: ./demo-cdk
