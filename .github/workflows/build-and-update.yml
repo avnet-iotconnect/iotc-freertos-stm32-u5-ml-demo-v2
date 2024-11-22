@@ -16,22 +16,27 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Setup python environment
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Setup tools
+        run: ./scripts/setup-project.sh
 
       - name: Build Firmware
-        run: echo "Hello World! Build Firmware!"
+        run: |
+          /opt/st/stm32cubeide_1.12.1/headless-build.sh -data . -import ./stm32/Projects/b_u585i_iot02a_ntz -build b_u585i_iot02a_ntz
+          ls ./stm32/Projects/b_u585i_iot02a_ntz/Debug/
 
-      - name: Install dependencies
-        working-directory: ./iot-connect
-        run: pip install -r requirements.txt
+      # - name: Setup python environment
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.12'
 
-      - name: Create OTA update
-        working-directory: ./iot-connect
-        env:
-          USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
-          PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
-          SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
-        run: echo "TBD"
+      # - name: Install dependencies
+      #   working-directory: ./iot-connect
+      #   run: pip install -r requirements.txt
+
+      # - name: Create OTA update
+      #   working-directory: ./iot-connect
+      #   env:
+      #     USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
+      #     PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
+      #     SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
+      #   run: echo "TBD"
