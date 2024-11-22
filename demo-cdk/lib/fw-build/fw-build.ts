@@ -38,8 +38,6 @@ export class FWBuildConstruct extends Construct {
               },
             },
           });
-        
-        // fwBuild.role!.addManagedPolicy(aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'));
 
         const codeConnectionPolicy = new iam.Policy(this, 'CodeConnectionPolicy', {
             statements: [
@@ -52,11 +50,5 @@ export class FWBuildConstruct extends Construct {
         fwBuild.role!.attachInlinePolicy(codeConnectionPolicy);
         // create the policy before the project
         (fwBuild.node.defaultChild as cdk.CfnResource).addDependency(codeConnectionPolicy.node.defaultChild as cdk.CfnResource);
-
-        // (fwBuild.node.defaultChild as CfnProject).addPropertyOverride('Source.Auth', {
-        //     Type: 'CODECONNECTIONS',
-        //     Resource:
-        //         gitArn,
-        // })
     }
 }
