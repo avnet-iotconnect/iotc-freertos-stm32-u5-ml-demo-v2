@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 
 import { Construct } from 'constructs';
+import  * as cdk from 'aws-cdk-lib';
 import {
   SecretValue,
   Stack,
@@ -21,6 +22,7 @@ import {
   aws_events_targets,
   triggers,
   aws_ssm,
+  Token,
 } from 'aws-cdk-lib';
 import { ComputeType } from 'aws-cdk-lib/aws-codebuild';
 
@@ -34,7 +36,8 @@ export class SagmakerPipeline extends Construct {
     const { project } = props;
 
     const config = this.node.tryGetContext('config');
-    const { region } = Stack.of(this);
+    // const { region } = Stack.of(this);
+    const region = Token.asString(cdk.Stack.of(this).region);
 
     const mlOutputBucket = new aws_s3.Bucket(this, 'MlOutput', {
       versioned: true,

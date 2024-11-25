@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: MIT-0
 
 import { Construct } from 'constructs';
+import  * as cdk from 'aws-cdk-lib';
 import {
   CfnParameter,
   Names,
-  Stack,
+  // Stack,
   aws_iam,
   aws_sagemaker,
   aws_servicecatalog,
   aws_ec2,
+  Token
 } from 'aws-cdk-lib';
 import { PersistantUniqueNameGen } from './persistant-unique-name-gen';
 
@@ -19,7 +21,9 @@ export class Sagmaker extends Construct {
   constructor(scope: Construct, id: string) {
     super(scope, id);
 
-    const { account, region } = Stack.of(this);
+    // const { account, region } = Stack.of(this);
+    const region = Token.asString(cdk.Stack.of(this).region);
+    const account = Token.asString(cdk.Stack.of(this).account);
 
     const serviceCatalogLaunchRole = new aws_iam.Role(this, 'ServiceCatalogLaunchRole', {
       assumedBy: new aws_iam.ServicePrincipal('servicecatalog.amazonaws.com'),
