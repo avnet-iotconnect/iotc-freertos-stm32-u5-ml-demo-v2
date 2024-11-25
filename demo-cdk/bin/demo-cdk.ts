@@ -4,6 +4,7 @@ import * as cdk from 'aws-cdk-lib';
 import { DemoCdkStack } from '../lib/demo-cdk-stack';
 
 console.log(process.env.CDK_DEFAULT_ACCOUNT,'process.env.CDK_DEFAULT_ACCOUNT')
+console.log(process.env.CDK_DEFAULT_REGION,'process.env.CDK_DEFAULT_REGION')
 
 const app = new cdk.App();
 new DemoCdkStack(app, 'DemoCdkStack', {
