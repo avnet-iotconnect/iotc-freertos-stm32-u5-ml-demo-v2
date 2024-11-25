@@ -2,6 +2,8 @@
 
 import argparse
 import requests
+import string
+import random
 
 from authentication import authenticate
 from constants import (
@@ -20,7 +22,14 @@ from constants import (
     FW_OTA_FILE,
     API_FW_URL,
     FW_ADD,
-    FW_PREFIX
+    FW_PREFIX,
+    API_FILE_URL,
+    FILE_UPLOAD,
+    FIRMWARE_UPGRADE,
+    FIRMWARE_UPGRADE_PUBLISH,
+    OTA_TARGET_ENTITY,
+    OTA_UPDATE,
+    MAX_FW_VERSION_SIZE
 )
 from check_status import check_status, BadHttpStatusException
 from common import (
@@ -35,8 +44,15 @@ def iot_connect_fw_ota():
     access_token = authenticate(args)
     print("Successful login - now create OTA update for the device.")
     template_guid = get_template_guid(DEVICE_WITH_SOUND_CLASS, access_token)
-    create_firmware(template_guid, access_token, "1.1.99")
-    # entity_guid = get_entity_guid(args.entity_name, access_token)
+
+    hw_version = "1.0.0"
+    fw_version = ''.join(random.choices(string.ascii_uppercase + string.digits, k=MAX_FW_VERSION_SIZE))
+    firmware_draft_name = FW_PREFIX + fw_version.replace('.', '')
+    fw_upgrade_guid = create_firmware(template_guid, firmware_draft_name, fw_version, hw_version, access_token)
+    upload_fw_file(fw_upgrade_guid, access_token)
+    publish_fw(fw_upgrade_guid, access_token)
+    entity_guid = get_entity_guid(args.entity_name, access_token)
+    create_fw_ota(fw_upgrade_guid, entity_guid, access_token)
 
 def parse_arguments() -> argparse.Namespace:
     """
@@ -54,14 +70,13 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("entity_name")
     return parser.parse_args()
 
-def create_firmware(device_template_guid: str, access_token: str, fw_version: str) -> str:
+def create_firmware(device_template_guid: str, firmware_name: str, fw_version: str, hw_version: str, access_token: str,) -> str:
     """Create new firmware in IoTConnect"""
-    firmwareName = FW_PREFIX + fw_version.replace('.', '')
     data = {
         "deviceTemplateGuid": device_template_guid,
         "software": fw_version,
-        "firmwareName": firmwareName,
-        "hardware": "1.0.0"
+        "firmwareName": firmware_name,
+        "hardware": hw_version
     }
 
     headers = {
@@ -74,8 +89,68 @@ def create_firmware(device_template_guid: str, access_token: str, fw_version: st
     response_json = response.json()
     guid = response_json["data"][0]["firmwareUpgradeGuid"]
 
-    print(f"Firmware {firmwareName} created with guid {guid}")
+    print(f"Firmware {firmware_name} created with guid {guid}")
     return guid
+
+def upload_fw_file(fw_upgrade_guid: str, access_token: str):
+    """Upload firmware file to IoTConnect"""
+    headers = {
+        "Authorization": access_token
+    }
+
+    fw_file = {
+        'fileData': open(FW_OTA_FILE, 'rb')
+    }
+
+    data = {
+        'fileRefGuid': fw_upgrade_guid,
+        'ModuleType': 'firmware',
+    }
+    response = requests.post(API_FILE_URL + FILE_UPLOAD, files = fw_file, data = data, headers = headers)
+
+    check_status(response)
+    response_json = response.json()
+    guid = response_json["data"][0]["guid"]
+
+    print(f"Firmware file created with guid {guid}")
+
+def publish_fw(fw_upgrade_guid: str, access_token: str):
+    """Release firmware in IoTConnect for OTA"""
+    data = {
+        "firmwareUpgradeGuid": fw_upgrade_guid,
+    }
+
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "*/*",
+        "Authorization": access_token
+    }
+    response = requests.put(API_FW_URL + FIRMWARE_UPGRADE + fw_upgrade_guid + FIRMWARE_UPGRADE_PUBLISH, json = data, headers = headers)
+    check_status(response)
+
+    print("FW Released")
+
+def create_fw_ota(fw_upgrade_guid: str, entity_guid: str, access_token: str):
+    """Create firmware OTA update for the given entity"""
+    data = {
+        "firmwareUpgradeGuid": fw_upgrade_guid,
+        "entityGuid": entity_guid,
+        "isForceUpdate": True,
+        "target": OTA_TARGET_ENTITY
+    }
+
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "*/*",
+        "Authorization": access_token
+    }
+    response = requests.post(API_FW_URL + OTA_UPDATE, json = data, headers = headers)
+    check_status(response)
+    response_json = response.json()
+
+    print("OTA Update created for:")
+    for ota_info in response_json["data"]:
+        print(f" - Device with guid {ota_info["deviceGuid"]}. OTA Update Guid {ota_info["otaUpdateGuid"]}")
 
 
 if __name__ == "__main__":

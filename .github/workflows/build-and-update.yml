@@ -9,22 +9,23 @@ on: workflow_dispatch
 
 jobs:
   fw_build:
-    # runs-on: codebuild-AvnetStm32FWBuild-${{ github.run_id }}-${{ github.run_attempt }}
-    runs-on: ubuntu-latest
+    runs-on: codebuild-AvnetStm32FWBuild-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      # - name: Setup tools
-      #   run: ./scripts/setup-project.sh
+      - name: Setup tools
+        run: ./scripts/setup-project.sh
 
-      # - name: Build Firmware
-      #   working-directory: ./stm32
-      #   run: |
-      #     /opt/st/stm32cubeide_1.12.1/headless-build.sh -data . -import Projects/b_u585i_iot02a_ntz -build b_u585i_iot02a_ntz
-      #     ls Projects/b_u585i_iot02a_ntz/Debug/
+      - name: Build Firmware
+        working-directory: ./stm32
+        run: |
+          /opt/st/stm32cubeide_1.12.1/headless-build.sh -data . -import Projects/b_u585i_iot02a_ntz -build b_u585i_iot02a_ntz
+          ls Projects/b_u585i_iot02a_ntz/Debug/
+          mkdir ../iot-connect/ota
+          cp Projects/b_u585i_iot02a_ntz/Debug/b_u585i_iot02a_ntz.bin ../iot-connect/ota/fw.iso
 
       - name: Setup python environment
         uses: actions/setup-python@v5
