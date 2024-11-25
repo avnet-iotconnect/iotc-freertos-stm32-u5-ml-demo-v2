@@ -7,6 +7,7 @@ import { MlConstruct } from './ml/ml';
 export class DemoCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+    console.log(cdk.Stack.of(this).region,'cdk.Stack.of(this).region22')
 
     new SecretsConstruct(this, 'SecretsConstruct');
     new FWBuildConstruct(this, 'FWBuildConstruct');
