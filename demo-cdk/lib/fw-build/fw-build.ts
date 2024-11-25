@@ -1,6 +1,11 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { aws_lambda_nodejs, aws_lambda } from 'aws-cdk-lib';
+import {
+    aws_iam,
+    aws_logs,
+    aws_codebuild
+} from 'aws-cdk-lib';
+import { CfnProject, EventAction, FilterGroup, ComputeType } from "aws-cdk-lib/aws-codebuild";
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as iot from 'aws-cdk-lib/aws-iot';
 
@@ -8,20 +13,42 @@ export class FWBuildConstruct extends Construct {
     constructor(scope: Construct, id: string) {
         super(scope, id);
 
-        // Create a dummy Lambda function
-        const lambdaFunctionDummy = new aws_lambda_nodejs.NodejsFunction(this, 'dummy-lambda', {
-            runtime: aws_lambda.Runtime.NODEJS_18_X,
-            environment: {
-                REGION: cdk.Stack.of(this).region
-            },
-        });
+        const gitOwner = this.node.tryGetContext('gitOwner');
+        const gitRepo = this.node.tryGetContext('gitRepo');
+        const gitArn = this.node.tryGetContext('gitArn');
 
-        lambdaFunctionDummy.addToRolePolicy(new iam.PolicyStatement({
-            effect: iam.Effect.ALLOW,
-            actions: [
-                'logs:*'
+        // Fix hardcoded values
+        const fwBuild = new aws_codebuild.Project(this, 'FWBuild', {
+            projectName: "AvnetStm32FWBuild",
+            source: aws_codebuild.Source.gitHub({
+              owner: gitOwner,
+              repo: gitRepo,
+              webhook: true,
+              webhookFilters: [FilterGroup.inEventOf(EventAction.WORKFLOW_JOB_QUEUED)],
+            }),
+            environment: {
+              buildImage: aws_codebuild.LinuxBuildImage.fromDockerRegistry(
+                'public.ecr.aws/y2t8c1e9/cube_ide_image:latest'
+              ),
+              computeType: ComputeType.SMALL,
+            },
+            logging: {
+              cloudWatch: {
+                logGroup: new aws_logs.LogGroup(this, `IoTBuildLogGroup`),
+              },
+            },
+          });
+
+        const codeConnectionPolicy = new iam.Policy(this, 'CodeConnectionPolicy', {
+            statements: [
+              new iam.PolicyStatement({
+                actions: ['codeconnections:GetConnectionToken', 'codeconnections:GetConnection'],
+                resources: [gitArn],
+              }),
             ],
-            resources: ['*']
-        }));
+        });
+        fwBuild.role!.attachInlinePolicy(codeConnectionPolicy);
+        // create the policy before the project
+        (fwBuild.node.defaultChild as cdk.CfnResource).addDependency(codeConnectionPolicy.node.defaultChild as cdk.CfnResource);
     }
 }

@@ -8,22 +8,29 @@ on: workflow_dispatch
 #     branches: ["main"]
 
 jobs:
-  iot_connect:
-    runs-on: ubuntu-latest
+  fw_build:
+    runs-on: codebuild-AvnetStm32FWBuild-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
+      - name: Setup tools
+        run: ./scripts/setup-project.sh
+
+      - name: Build Firmware
+        working-directory: ./stm32
+        run: |
+          /opt/st/stm32cubeide_1.12.1/headless-build.sh -data . -import Projects/b_u585i_iot02a_ntz -build b_u585i_iot02a_ntz
+          ls Projects/b_u585i_iot02a_ntz/Debug/
+          mkdir ../iot-connect/ota
+          cp Projects/b_u585i_iot02a_ntz/Debug/b_u585i_iot02a_ntz.bin ../iot-connect/ota/fw.iso
+
       - name: Setup python environment
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      # - name: Build Firmware TBD
-      #   working-directory: ./tbd
-      #   run: TBD
 
       - name: Install dependencies
         working-directory: ./iot-connect
@@ -35,4 +42,5 @@ jobs:
           USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
           PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
           SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
-        run: echo "TBD"
+          ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
+        run: python ./iot_connect_fw_ota.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY" "$ENTITY_NAME"
