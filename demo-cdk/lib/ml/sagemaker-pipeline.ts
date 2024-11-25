@@ -37,7 +37,8 @@ export class SagmakerPipeline extends Construct {
 
     const config = this.node.tryGetContext('config');
     // const { region } = Stack.of(this);
-    const region = Token.asString(cdk.Stack.of(this).region);
+    console.log(cdk.Stack.of(this).region,'cdk.Stack.of(this).region')
+    const region = cdk.Stack.of(this).region;
 
     const mlOutputBucket = new aws_s3.Bucket(this, 'MlOutput', {
       versioned: true,

@@ -22,8 +22,9 @@ export class Sagmaker extends Construct {
     super(scope, id);
 
     // const { account, region } = Stack.of(this);
-    const region = Token.asString(cdk.Stack.of(this).region);
-    const account = Token.asString(cdk.Stack.of(this).account);
+    console.log(cdk.Stack.of(this).region,'cdk.Stack.of(this).region')
+    const region = cdk.Stack.of(this).region;
+    const account = cdk.Stack.of(this).account;
 
     const serviceCatalogLaunchRole = new aws_iam.Role(this, 'ServiceCatalogLaunchRole', {
       assumedBy: new aws_iam.ServicePrincipal('servicecatalog.amazonaws.com'),
