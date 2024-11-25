@@ -181,6 +181,8 @@ extern void vDefenderAgentTask( void * );
 
 extern void otaPal_EarlyInit( void );
 
+#include "app/s3_client/s3_https_client.h"
+
 void vInitTask( void * pvArgs )
 {
     BaseType_t xResult;
@@ -226,6 +228,9 @@ void vInitTask( void * pvArgs )
     configASSERT( xResult == pdTRUE );
 
     xResult = xTaskCreate( vMicSensorPublishTask, "MicSense", 1024, NULL, 6, NULL );
+    configASSERT( xResult == pdTRUE );
+
+    xResult = xTaskCreate( vS3ConnectTask, "S3Client", 1024, NULL, 7, NULL );
     configASSERT( xResult == pdTRUE );
 
 /*
