@@ -83,56 +83,24 @@ static uint8_t responseBodyBuffer[RESPONSE_BODY_BUFFER_SIZE]; /**< Buffer for HT
 /* Buffer for HTTP headers */
 static uint8_t headersBuffer[HEADERS_BUFFER_SIZE];
 
-/* ============================ Function Prototypes ============================ */
-
-/**
- * @brief Initializes the S3 client by clearing request and response buffers.
- */
-void S3Client_Init(void);
-
-/**
- * @brief Establishes a secure connection to the AWS S3 service.
- *
- * @return pdTRUE on successful connection, pdFALSE otherwise.
- */
-BaseType_t S3Client_Connect(void);
-
-/**
- * @brief Sends a POST request to upload an object to AWS S3.
- *
- * @param[in] payload Pointer to the data payload to be sent.
- * @param[in] payloadLength Length of the data payload.
- *
- * @return pdTRUE on success, pdFALSE on failure.
- */
-BaseType_t S3Client_PostObject(const char *payload, uint32_t payloadLength);
-
-/**
- * @brief Retrieves an object from AWS S3 via a GET request.
- *
- * @return Pointer to the response buffer containing the object data, or NULL on failure.
- */
-const char *S3Client_GetObject(void);
-
-/**
- * @brief Disconnects the client from AWS S3 and cleans up resources.
- */
-void S3Client_Disconnect(void);
 
 /* ============================ Function Implementations ============================ */
 
-void S3Client_Init(void)
+int S3Client_Init(void)
 {
     LogDebug("Initializing S3 Client buffers.");
 
-    /* Clear memory for request and response buffers to avoid residual data */
+    /* Clear memory for request and response buffers */
     memset(requestBodyBuffer, 0, REQUEST_BODY_BUFFER_SIZE);
     memset(responseBodyBuffer, 0, RESPONSE_BODY_BUFFER_SIZE);
 
     LogDebug("S3 Client buffers initialized successfully.");
+
+    return S3_CLIENT_SUCCESS;
 }
 
-BaseType_t S3Client_Connect(void)
+int S3Client_Connect(void)
+
 {
     LogInfo("Attempting to establish connection to AWS S3.");
 
@@ -145,7 +113,7 @@ BaseType_t S3Client_Connect(void)
     if (networkContextPtr == NULL)
     {
         LogError("Failed to allocate network context!");
-        return pdFALSE;
+        return S3_CLIENT_ERROR; // Return generic error code
     }
     LogDebug("Network context allocated successfully.");
 
@@ -168,7 +136,7 @@ BaseType_t S3Client_Connect(void)
     {
         LogError("Failed to configure TLS transport! Error Code: %d", tlsTransportStatus);
         mbedtls_transport_free(networkContextPtr);
-        return pdFALSE;
+        return S3_CLIENT_TLS_ERROR; // Return TLS specific error code
     }
     LogDebug("TLS transport configured successfully.");
 
@@ -179,7 +147,7 @@ BaseType_t S3Client_Connect(void)
     {
         LogError("Failed to connect to AWS S3! Error Code: %d", tlsTransportStatus);
         mbedtls_transport_free(networkContextPtr);
-        return pdFALSE;
+        return S3_CLIENT_NETWORK_ERROR; // Return network specific error code
     }
     LogInfo("Successfully connected to AWS S3.");
 
@@ -193,21 +161,24 @@ BaseType_t S3Client_Connect(void)
 
     LogDebug("Transport interface initialized.");
 
-    return pdTRUE;
+    return S3_CLIENT_SUCCESS; // Return success code
 }
 
-BaseType_t S3Client_PostObject(const char *payload, uint32_t payloadLength)
+int S3Client_PostObject(const char *payload, uint32_t payloadLength)
 {
     LogInfo("Preparing to send POST request to AWS S3.");
 
     /* Validate input parameters */
-    assert(payload != NULL);
-    assert(payloadLength > 0);
+    if (payload == NULL || payloadLength == 0)
+    {
+        LogError("Invalid parameters: payload or payloadLength is null or zero.");
+        return S3_CLIENT_INVALID_PARAM; // Return invalid parameter error
+    }
 
     /* Initialize HTTP request and response structures */
     HTTPRequestHeaders_t headers = {0};
     headers.pBuffer = headersBuffer;
-	headers.bufferLen = sizeof(headersBuffer);
+    headers.bufferLen = sizeof(headersBuffer);
 
     HTTPResponse_t response = {0};
     HTTPRequestInfo_t requestInfo = {0};
@@ -231,7 +202,7 @@ BaseType_t S3Client_PostObject(const char *payload, uint32_t payloadLength)
     if (https_status != HTTPSuccess)
     {
         LogError("Failed to initialize HTTP headers! HTTP Status: %s", HTTPClient_strerror(https_status));
-        return pdFALSE;
+        return S3_CLIENT_HTTP_ERROR; // Return HTTP error code
     }
     LogDebug("HTTP request headers initialized successfully.");
 
@@ -242,63 +213,16 @@ BaseType_t S3Client_PostObject(const char *payload, uint32_t payloadLength)
     if (https_status != HTTPSuccess)
     {
         LogError("Failed to send POST request! HTTP Status: %s", HTTPClient_strerror(https_status));
-        return pdFALSE;
+        return S3_CLIENT_HTTP_ERROR; // Return HTTP error code
     }
 
     LogInfo("POST request sent successfully. Received HTTP Status: %d", https_status);
     LogDebug("Response Body: %.*s", (int)response.contentLength, response.pBuffer);
 
-    return pdTRUE;
+    return S3_CLIENT_SUCCESS; // Return success code
 }
 
-const char *S3Client_GetObject(void)
-{
-    LogInfo("Preparing to send GET request to AWS S3.");
-
-    /* Initialize HTTP request and response structures */
-    HTTPRequestHeaders_t headers = {0};
-    HTTPResponse_t response = {0};
-    HTTPRequestInfo_t requestInfo = {0};
-    HTTPStatus_t https_status = HTTPSuccess; /* Initialize to success */
-
-    /* Assign response buffer */
-    response.pBuffer = responseBodyBuffer;
-    response.bufferLen = RESPONSE_BODY_BUFFER_SIZE;
-
-    /* Configure the HTTP request details */
-    requestInfo.pHost = S3_HOSTNAME;
-    requestInfo.hostLen = strlen(S3_HOSTNAME);
-    requestInfo.pPath = "/" S3_OBJECT_KEY;
-    requestInfo.pathLen = strlen(requestInfo.pPath);
-    requestInfo.pMethod = HTTP_METHOD_GET;
-    requestInfo.methodLen = strlen(HTTP_METHOD_GET);
-    requestInfo.reqFlags = HTTP_REQUEST_KEEP_ALIVE_FLAG;
-
-    LogDebug("Initializing HTTP request headers for GET request.");
-    if (HTTPClient_InitializeRequestHeaders(&headers, &requestInfo) != HTTPSuccess)
-    {
-        LogError("Failed to initialize HTTP headers for GET request!");
-        return NULL;
-    }
-    LogDebug("HTTP request headers initialized successfully.");
-
-    /* Send the HTTP GET request */
-    LogInfo("Sending GET request to AWS S3.");
-    https_status = HTTPClient_Send(&transport_if, &headers, NULL, 0, &response, 0);
-
-    if (https_status != HTTPSuccess)
-    {
-        LogError("Failed to send GET request! HTTP Status: %s", HTTPClient_strerror(https_status));
-        return NULL;
-    }
-
-    LogInfo("GET request sent successfully. Received HTTP Status: %d", https_status);
-    LogDebug("Response Body: %.*s", (int)response.contentLength, response.pBuffer);
-
-    return (const char *)responseBodyBuffer;
-}
-
-void S3Client_Disconnect(void)
+int S3Client_Disconnect(void)
 {
     if (ptrNetworkContext != NULL)
     {
@@ -307,10 +231,12 @@ void S3Client_Disconnect(void)
         mbedtls_transport_free(ptrNetworkContext);
         ptrNetworkContext = NULL;
         LogInfo("Connection to AWS S3 closed and resources freed.");
+        return S3_CLIENT_SUCCESS;  // Return success code
     }
     else
     {
         LogWarn("Disconnect called, but network context is already NULL.");
+        return S3_CLIENT_ERROR;    // Return error code if no network context
     }
 }
 
