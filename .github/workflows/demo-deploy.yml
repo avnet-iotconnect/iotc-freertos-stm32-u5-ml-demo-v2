@@ -60,6 +60,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Prepare Lambda layer
+        run: |
+          mkdir -p "iot-connect-layer/python"
+          cp -r "iot-connect" "iot-connect-layer/python"
+
       - name: Synth stack
         working-directory: ./demo-cdk
         env:

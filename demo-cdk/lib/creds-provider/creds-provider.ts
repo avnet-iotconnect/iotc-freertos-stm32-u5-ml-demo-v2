@@ -53,7 +53,7 @@ export class CredsProviderConstruct extends Construct {
         });
 
         const credsProviderLayerTestLayer = new aws_lambda.LayerVersion(this, 'CredsProviderLayerTestLayer', {
-            code: aws_lambda.Code.fromAsset('../iot-connect',
+            code: aws_lambda.Code.fromAsset('../iot-connect-layer',
                 {
                     bundling: {
                     image: aws_lambda.Runtime.PYTHON_3_12.bundlingImage,
