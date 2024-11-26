@@ -8,6 +8,34 @@
 
 #include "FreeRTOS.h"   /**< FreeRTOS includes for task management and types */
 
+
+/* ============================ Data Structures ============================ */
+
+/**
+ * @brief Structure representing a custom HTTP header.
+ */
+typedef struct {
+    const char* key;   /**< The key/name of the HTTP header. */
+    const char* value; /**< The value of the HTTP header. */
+} HTTPCustomHeader_t;
+
+/**
+ * @brief Structure representing the context for an S3 upload.
+ */
+typedef struct {
+    const char* payload;      /**< Pointer to the payload data to be uploaded. */
+    uint32_t payloadLength;   /**< Length of the payload data in bytes. */
+    uint32_t sentBytes;       /**< Number of bytes already sent. */
+} S3UploadContext;
+
+/**
+ * @brief Structure representing user-defined HTTP headers.
+ */
+typedef struct {
+    HTTPCustomHeader_t* headers; /**< Pointer to an array of custom HTTP headers. */
+    uint8_t headerCount;          /**< Number of custom HTTP headers in the array. */
+} UserHeaderContext_t;
+
 /* ============================ Return Codes ============================ */
 
 /** @brief Success code for operations */
@@ -57,10 +85,17 @@ int S3Client_Connect(void);
  * 
  * This function sends a POST request to the S3 endpoint to upload an object.
  *
- * @return S3_CLIENT_SUCCESS on success, or appropriate error code on failure.
+ * @param[in] payload Pointer to the data to be uploaded.
+ * @param[in] payloadLength Length of the data to be uploaded.
+ * @param[in] userHeaders Pointer to an array of custom HTTP headers.
+ * @param[in] headerCount Number of custom HTTP headers.
+ *
+ * @return S3_CLIENT_SUCCESS on success, or an appropriate error code on failure.
  */
-int S3Client_PostObject(const char *payload, uint32_t payloadLength);
-
+int S3Client_Post(const char *payload, 
+                        uint32_t payloadLength, 
+                        HTTPCustomHeader_t* userHeaders, 
+                        uint8_t headerCount);
 
 /**
  * @brief Closes the connection to the S3 endpoint.
