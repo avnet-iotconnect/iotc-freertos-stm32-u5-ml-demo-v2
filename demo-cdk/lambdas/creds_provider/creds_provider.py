@@ -4,7 +4,7 @@ import os
 
 from authentication import authenticate
 
-def creds_provider_test_handler(event, context):
+def creds_provider_handler(event, context):
     print("event")
     print(event)
     username = os.environ['IOTCONNECT_USERNAME']

@@ -35,7 +35,7 @@ export class CredsProviderConstruct extends Construct {
         const credsProviderLambda = new aws_lambda.Function(this, 'CredsProviderLambda', {
             runtime: aws_lambda.Runtime.PYTHON_3_12,
             code: aws_lambda.Code.fromAsset(
-                'lambdas/creds_provider_test',
+                'lambdas/creds_provider',
                 {
                     bundling: {
                     image: aws_lambda.Runtime.PYTHON_3_12.bundlingImage,
@@ -46,7 +46,7 @@ export class CredsProviderConstruct extends Construct {
                     },
                 }
             ),
-            handler: 'creds_provider_test.creds_provider_test_handler',
+            handler: 'creds_provider.creds_provider_handler',
             role: credsProviderLambdaRole,  // Attach the role with the necessary permissions
             memorySize: 128,
             timeout: cdk.Duration.seconds(60),
