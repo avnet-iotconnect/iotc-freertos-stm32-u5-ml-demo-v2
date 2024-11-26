@@ -52,7 +52,7 @@ export class CredsProviderConstruct extends Construct {
             },
         });
 
-        const credsProviderLayerTestLayer = new aws_lambda.LayerVersion(this, 'CredsProviderLayerTestLayer' {
+        const credsProviderLayerTestLayer = new aws_lambda.LayerVersion(this, 'CredsProviderLayerTestLayer', {
             code: aws_lambda.Code.fromAsset('../iot-connect',
                 {
                     bundling: {
@@ -64,7 +64,7 @@ export class CredsProviderConstruct extends Construct {
                     },
                 }),
             compatibleRuntimes: [aws_lambda.Runtime.PYTHON_3_12]
-        })
+        });
 
         const credsProviderLayerTestLambda = new aws_lambda.Function(this, 'CredsProviderLayerTestLambda', {
             runtime: aws_lambda.Runtime.PYTHON_3_12,
