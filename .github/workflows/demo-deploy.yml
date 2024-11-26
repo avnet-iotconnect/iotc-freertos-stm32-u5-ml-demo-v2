@@ -62,6 +62,7 @@ jobs:
 
       - name: Prepare Lambda layer
         run: |
+          mkdir -p "iot-connect-layer"
           cp -R "iot-connect" "iot-connect-layer/python"
           ls -la "iot-connect-layer/python"
 
