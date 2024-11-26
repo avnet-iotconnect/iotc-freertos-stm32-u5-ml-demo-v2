@@ -59,7 +59,7 @@ export class CredsProviderConstruct extends Construct {
                     image: aws_lambda.Runtime.PYTHON_3_12.bundlingImage,
                     command: [
                         'bash', '-c',
-                        'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output'
+                        'pip install -r python/requirements.txt -t /asset-output/python && cp -au . /asset-output/python'
                     ],
                     },
                 }),
@@ -69,16 +69,7 @@ export class CredsProviderConstruct extends Construct {
         const credsProviderLayerTestLambda = new aws_lambda.Function(this, 'CredsProviderLayerTestLambda', {
             runtime: aws_lambda.Runtime.PYTHON_3_12,
             code: aws_lambda.Code.fromAsset(
-                'lambdas/creds_provider_test',
-                {
-                    bundling: {
-                    image: aws_lambda.Runtime.PYTHON_3_12.bundlingImage,
-                    command: [
-                        'bash', '-c',
-                        'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output'
-                    ],
-                    },
-                }
+                'lambdas/creds_provider_test'
             ),
             handler: 'creds_provider_test.creds_provider_test_handler',
             role: credsProviderLambdaRole,  // Attach the role with the necessary permissions
