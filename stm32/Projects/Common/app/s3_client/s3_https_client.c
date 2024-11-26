@@ -314,7 +314,8 @@ void vS3ConnectTask( void * pvParameters )
 
     /* Block until the network interface is connected */
 	( void ) xEventGroupWaitBits( xSystemEvents,
-								  EVT_MASK_NET_CONNECTED,
+								  EVT_MASK_NET_CONNECTED | 
+                                  EVT_MASK_MQTT_CONNECTED,
 								  pdFALSE,
 								  pdTRUE,
 								  portMAX_DELAY );
