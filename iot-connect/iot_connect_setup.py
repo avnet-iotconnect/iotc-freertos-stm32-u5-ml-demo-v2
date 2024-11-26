@@ -26,7 +26,7 @@ from common import (
 def iot_connect_setup():
     """Perform IoTConnect solution setup"""
     args = parse_arguments()
-    access_token = authenticate(args)
+    access_token = authenticate(args.username, args.password, args.solution_key)
     print("Successful login - now create device templates.")
     entity_guid = get_entity_guid(args.entity_name, access_token)
     soundclass_temp_guid = create_device_template(access_token, DEVICE_WITH_SOUND_CLASS)

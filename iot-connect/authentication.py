@@ -37,7 +37,7 @@ def get_basic_token() -> str:
     print("Basic token: " + basic_token)
     return basic_token
 
-def get_credentials(args: argparse.Namespace) -> Credentials:
+def get_credentials(username: str, password: str, solution_key: str) -> Credentials:
     """
     Get credentials from CLI arguments
      - username
@@ -45,12 +45,12 @@ def get_credentials(args: argparse.Namespace) -> Credentials:
      - solution key
     """
     print("Parse command line arguments")
-    credentials = Credentials(args.username, args.password, args.solution_key)
+    credentials = Credentials(username, password, solution_key)
     return credentials
 
-def authenticate(args: argparse.Namespace) -> str:
+def authenticate(username: str, password: str, solution_key: str) -> str:
     """Get access token from IoT Connect and return it. Entrance point to this module"""
-    credentials = get_credentials(args)
+    credentials = get_credentials(username, password, solution_key)
     print(f"Authenticate with Username which starts with: {credentials.get_username()[:5]}")
     basic_token = get_basic_token()
     headers = {

@@ -41,7 +41,7 @@ from common import (
 def iot_connect_fw_ota():
     """Perform IoTConnect FW OTA"""
     args = parse_arguments()
-    access_token = authenticate(args)
+    access_token = authenticate(args.username, args.password, args.solution_key)
     print("Successful login - now create OTA update for the device.")
     template_guid = get_template_guid(DEVICE_WITH_SOUND_CLASS, access_token)
 
