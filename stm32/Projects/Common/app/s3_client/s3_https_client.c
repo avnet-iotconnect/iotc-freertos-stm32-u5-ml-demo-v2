@@ -39,15 +39,8 @@
 /* Buffer for HTTP headers */
 #define HEADERS_BUFFER_SIZE 500
 
-/* Maximum size of a chunk of data to be sent to S3 */
-#define MAX_CHUNK_SIZE (1024 * 64)  
-
 /* Maximum number of custom headers */
 #define MAX_CUSTOM_HEADERS 10       
-
-/** Maximum length of custom header key and value.
-* Used for custom headers purposes only.*/
-#define MAX_HEADER_VALUE_LENGTH 256
 
 /* AWS S3 Configuration */
 #define S3_HOSTNAME "u1cmgbltr6.execute-api.us-east-2.amazonaws.com"   /**< AWS S3 Hostname */
@@ -81,7 +74,6 @@
 "sSi6\n"\
 "-----END CERTIFICATE-----"
 
-
 /* Uncomment the following line to enable dumping of user headers */
 #define ENABLE_USER_HEADERS_DUMP
 
@@ -107,25 +99,6 @@ static uint8_t responseBodyBuffer[RESPONSE_BODY_BUFFER_SIZE]; /**< Buffer for HT
 static uint8_t headersBuffer[HEADERS_BUFFER_SIZE];
 
 /* ============================ Static Function Declarations ============================ */
-
-/**
- * @brief Sends a chunk of data to the S3 client.
- *
- * This function sends a chunk of data to the S3 client using the provided HTTP request headers,
- * upload context, and user header context.
- *
- * @param headers Pointer to the HTTP request headers.
- * @param uploadCtx Pointer to the S3 upload context.
- * @param userHeaders Pointer to the user header context.
- * @param isLastChunk Boolean flag indicating if this is the last chunk to be sent.
- *
- * @return An integer indicating the success or failure of the operation.
- */
-static int S3Client_SendChunk(HTTPRequestHeaders_t* headers, 
-                              S3UploadContext* uploadCtx, 
-                              UserHeaderContext_t* userHeaders,
-                              bool isLastChunk);
-
 
 /* ============================ Function Implementations ============================ */
 
@@ -232,26 +205,12 @@ int S3Client_Post(const char *payload,
         return S3_CLIENT_INVALID_PARAM;
     }
 
-    /* Prepare user header context */
-    UserHeaderContext_t userHeaderCtx = {
-        .headers = userHeaders,
-        .headerCount = headerCount
-    };
-
-    /* Initialize upload context */
-    S3UploadContext uploadCtx = {
-        .payload = payload,
-        .payloadLength = payloadLength,
-        .sentBytes = 0
-    };
-
     /* Initialize HTTP request and response structures */
     HTTPRequestHeaders_t headers = {0};
     headers.pBuffer = headersBuffer;
     headers.bufferLen = sizeof(headersBuffer);
 
     HTTPStatus_t https_status = HTTPSuccess;
-
     LogDebug("Initializing HTTP request headers");
     
     /* Configure initial request headers */
@@ -271,26 +230,62 @@ int S3Client_Post(const char *payload,
         return S3_CLIENT_HTTP_ERROR;
     }
 
-    /* Chunk-based upload loop */
-    LogInfo("Starting chunk-based upload");
-    uint32_t chunkCount = 0;
-    while (uploadCtx.sentBytes < payloadLength)
-    {
-        bool isLastChunk = (uploadCtx.sentBytes + MAX_CHUNK_SIZE >= payloadLength);
-        
-        LogDebug("Processing Chunk %u", ++chunkCount);
-        
-        int result = S3Client_SendChunk(&headers, &uploadCtx, &userHeaderCtx, isLastChunk);
-        if (result != S3_CLIENT_SUCCESS)
-        {
-            LogError("Chunk upload failed at byte %lu", uploadCtx.sentBytes);
-            return result;
+    /* Add user-provided custom headers */
+    for (uint8_t i = 0; i < headerCount; i++) {
+        if (userHeaders[i].key && userHeaders[i].value) {
+            LogDebug("Adding Custom Header: Key='%s', Value='%s'", 
+                     userHeaders[i].key, userHeaders[i].value);
+            
+            HTTPClient_AddHeader(&headers, 
+                                 userHeaders[i].key, 
+                                 strlen(userHeaders[i].key), 
+                                 userHeaders[i].value, 
+                                 strlen(userHeaders[i].value));
         }
     }
 
-    LogInfo("Upload complete. Total chunks: %u, Total bytes: %lu", 
-            chunkCount, 
-            payloadLength);
+    /* Prepare HTTP response structure */
+    HTTPResponse_t response = {0};
+    response.pBuffer = responseBodyBuffer;
+    response.bufferLen = RESPONSE_BODY_BUFFER_SIZE;
+
+    /* Send entire payload in single transmission */
+    LogInfo("Sending entire payload in single transmission");
+    LogDebug("Payload Size: %lu bytes", payloadLength);
+
+    /* Optional: Hexdump of first few bytes (for debugging) */
+    #ifdef ENABLE_PAYLOAD_HEXDUMP
+    {
+        LogDebug("First %d bytes of payload:", PAYLOAD_HEXDUMP_BYTES);
+        for (uint32_t i = 0; i < (payloadLength < PAYLOAD_HEXDUMP_BYTES ? payloadLength : PAYLOAD_HEXDUMP_BYTES); i++) {
+            LogDebug("%02X ", (unsigned char)payload[i]);
+        }
+    }
+    #endif
+
+    /* Transmit payload */
+    https_status = HTTPClient_Send(&transport_if, 
+                                   &headers, 
+                                   (const uint8_t*)payload, 
+                                   payloadLength, 
+                                   &response, 
+                                   0);
+
+    /* Check transmission result */
+    if (https_status != HTTPSuccess) {
+        LogError("Payload upload failed! HTTP Status: %s", HTTPClient_strerror(https_status));
+        return S3_CLIENT_HTTP_ERROR;
+    }
+
+    /* Optional: Response dump for debugging */
+    #ifdef ENABLE_RESPONSE_DUMP
+    {
+        LogDebug("Response Dump:");
+        LogDebug("%.*s", response.bufferLen, response.pBuffer);
+    }
+    #endif
+
+    LogInfo("Upload complete. Total bytes sent: %lu", payloadLength);
     
     return S3_CLIENT_SUCCESS;
 }
@@ -327,20 +322,17 @@ void vS3ConnectTask( void * pvParameters )
     S3Client_Init();
     S3Client_Connect();
 
-    #define LARGE_PAYLOAD_SIZE (1024)
-    char large_payload[LARGE_PAYLOAD_SIZE];
-    
-    // Fill payload with repeating pattern
-    memset(large_payload, 'A', LARGE_PAYLOAD_SIZE);
-    
+    /* Test code */
+    const char *small_payload = "Hello, World!";
+
     HTTPCustomHeader_t headers[] = {
         {"Content-Type", "audio/wav"},
         {"x-api-key", "DkIxv0zK8T7qHHajtc5y58182rBycj6V7OTMzsEe"}
     };
     
     int result = S3Client_Post(
-        large_payload, 
-        LARGE_PAYLOAD_SIZE, 
+        small_payload, 
+        strlen(small_payload), 
         headers, 
         sizeof(headers) / sizeof(headers[0])
     );
@@ -350,138 +342,4 @@ void vS3ConnectTask( void * pvParameters )
     {
 
     }
-}
-
-static int S3Client_SendChunk(HTTPRequestHeaders_t* headers, 
-                               S3UploadContext* uploadCtx, 
-                               UserHeaderContext_t* userHeaders,
-                               bool isLastChunk)
-{
-    /* Calculate current chunk size */
-    uint32_t chunkSize = (uploadCtx->payloadLength - uploadCtx->sentBytes > MAX_CHUNK_SIZE) 
-                         ? MAX_CHUNK_SIZE 
-                         : (uploadCtx->payloadLength - uploadCtx->sentBytes);
-
-    LogDebug("Preparing to send chunk: Start Byte=%lu, Chunk Size=%lu, Is Last Chunk=%s", 
-             uploadCtx->sentBytes, 
-             chunkSize, 
-             isLastChunk ? "Yes" : "No");
-
-    /* Prepare HTTP headers for chunk */
-    HTTPRequestInfo_t requestInfo = {0};
-    requestInfo.pHost = S3_HOSTNAME;
-    requestInfo.hostLen = strlen(S3_HOSTNAME);
-    requestInfo.pPath = "/" S3_OBJECT_KEY;
-    requestInfo.pathLen = strlen(requestInfo.pPath);
-    requestInfo.pMethod = HTTP_METHOD_POST;
-    requestInfo.methodLen = strlen(HTTP_METHOD_POST);
-    
-    /* Add user-provided custom headers */
-    if (userHeaders && userHeaders->headers && userHeaders->headerCount > 0) {
-        LogDebug("Adding %u custom headers", userHeaders->headerCount);
-        
-        for (size_t i = 0; i < userHeaders->headerCount; i++) {
-            if (userHeaders->headers[i].key && userHeaders->headers[i].value) {
-                
-                #ifdef ENABLE_USER_HEADERS_DUMP
-                {
-                    // Truncate long header values for logging
-                    char truncatedValue[MAX_HEADER_VALUE_LENGTH];
-                    snprintf(truncatedValue, sizeof(truncatedValue), 
-                            "%s", userHeaders->headers[i].value);
-                    
-                    LogDebug("Custom Header [%u]: Key='%s', Value='%s'", 
-                            i, 
-                            userHeaders->headers[i].key, 
-                            truncatedValue);
-                }
-                #endif
-                
-                HTTPClient_AddHeader(headers, 
-                                     userHeaders->headers[i].key, 
-                                     strlen(userHeaders->headers[i].key), 
-                                     userHeaders->headers[i].value, 
-                                     strlen(userHeaders->headers[i].value));
-            }
-        }
-    }
-
-    /* Prepare and log content range header */
-    char contentRangeHeader[64];
-    snprintf(contentRangeHeader, sizeof(contentRangeHeader), 
-             "bytes %lu-%lu/%lu", 
-             uploadCtx->sentBytes, 
-             uploadCtx->sentBytes + chunkSize - 1, 
-             uploadCtx->payloadLength);
-    
-    LogDebug("Content-Range Header: %s", contentRangeHeader);
-    HTTPClient_AddHeader(headers, 
-                         "Content-Range", 
-                         strlen("Content-Range"), 
-                         contentRangeHeader, 
-                         strlen(contentRangeHeader));
-    
-    /* Add transfer encoding for last chunk */
-    if (isLastChunk) {
-        LogDebug("Adding Transfer-Encoding: chunked for final chunk");
-        HTTPClient_AddHeader(headers, 
-                                  "Transfer-Encoding", 
-                                  strlen("Transfer-Encoding"), 
-                                  "chunked", 
-                                  strlen("chunked"));
-    }
-
-    /* Log payload details for debugging */
-    LogDebug("Chunk Payload Details: Offset=%lu, Length=%lu", 
-             uploadCtx->sentBytes, chunkSize);
-    
-    /* Optional: Hexdump of first few bytes (for debugging) */
-    #ifdef ENABLE_PAYLOAD_HEXDUMP
-    {
-        LogDebug("First %d bytes of chunk:", PAYLOAD_HEXDUMP_BYTES);
-        for (uint32_t i = 0; i < (chunkSize < PAYLOAD_HEXDUMP_BYTES ? chunkSize : PAYLOAD_HEXDUMP_BYTES); i++) {
-            LogDebug("%02X ", (unsigned char)uploadCtx->payload[uploadCtx->sentBytes + i]);
-        }
-    }
-    #endif
-
-    /* Send current chunk */
-    HTTPResponse_t response = {0};
-    response.pBuffer = responseBodyBuffer;
-    response.bufferLen = RESPONSE_BODY_BUFFER_SIZE;
-
-    LogDebug("Initiating chunk transmission");
-    HTTPStatus_t https_status = HTTPClient_Send(&transport_if, 
-                                                headers, 
-                                                (const uint8_t*)(uploadCtx->payload + uploadCtx->sentBytes), 
-                                                chunkSize, 
-                                                &response, 
-                                                0);
-
-    #ifdef ENABLE_RESPONSE_DUMP
-    {
-        LogDebug("Response Dump:");
-        LogDebug("%.*s", response.bufferLen, response.pBuffer);
-    }
-	#endif
-
-    if (https_status != HTTPSuccess) {
-        LogError("Chunk upload failed! HTTP Status: %s", HTTPClient_strerror(https_status));
-        
-        /* Enhanced error logging */
-        LogDebug("Chunk Upload Failure Details:");
-        LogDebug("  Bytes Sent Before Failure: %lu", uploadCtx->sentBytes);
-        LogDebug("  Total Payload Length: %lu", uploadCtx->payloadLength);
-        LogDebug("  Failed Chunk Size: %lu", chunkSize);
-        
-        return S3_CLIENT_HTTP_ERROR;
-    }
-
-    /* Log successful chunk transmission */
-    LogDebug("Chunk transmitted successfully. Total bytes sent: %lu/%lu", 
-             uploadCtx->sentBytes + chunkSize, 
-             uploadCtx->payloadLength);
-
-    uploadCtx->sentBytes += chunkSize;
-    return S3_CLIENT_SUCCESS;
 }

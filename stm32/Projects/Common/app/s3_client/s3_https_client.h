@@ -28,14 +28,6 @@ typedef struct {
     uint32_t sentBytes;       /**< Number of bytes already sent. */
 } S3UploadContext;
 
-/**
- * @brief Structure representing user-defined HTTP headers.
- */
-typedef struct {
-    HTTPCustomHeader_t* headers; /**< Pointer to an array of custom HTTP headers. */
-    uint8_t headerCount;          /**< Number of custom HTTP headers in the array. */
-} UserHeaderContext_t;
-
 /* ============================ Return Codes ============================ */
 
 /** @brief Success code for operations */
