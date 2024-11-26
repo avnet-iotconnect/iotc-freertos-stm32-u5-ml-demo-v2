@@ -2,7 +2,7 @@
 
 import os
 
-from authentication import authenticate
+from common.authentication import authenticate
 
 def creds_provider_handler(event, context):
     print("event")
