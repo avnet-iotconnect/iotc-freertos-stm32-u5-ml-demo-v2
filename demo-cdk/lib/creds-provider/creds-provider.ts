@@ -66,7 +66,7 @@ export class CredsProviderConstruct extends Construct {
                     image: aws_lambda.Runtime.PYTHON_3_12.bundlingImage,
                     command: [
                         'bash', '-c',
-                        'pip install -r python/requirements.txt -t /asset-output && cp -au . /asset-output'
+                        'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output'
                     ],
                     },
                 }
