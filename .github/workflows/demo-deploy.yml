@@ -62,8 +62,7 @@ jobs:
 
       - name: Prepare Lambda layer
         run: |
-          mkdir -p "iot-connect-layer/python"
-          cp -r "iot-connect" "iot-connect-layer/python"
+          cp -R "iot-connect" "iot-connect-layer/python"
           ls -la "iot-connect-layer/python"
 
       - name: Synth stack
