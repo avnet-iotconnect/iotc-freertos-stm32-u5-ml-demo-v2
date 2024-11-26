@@ -29,7 +29,7 @@ export class CredsProviderConstruct extends Construct {
         // Create the Lambda function for basic authentication
         const credsProviderLambda = new aws_lambda.Function(this, 'CredsProviderLambda', {
             runtime: aws_lambda.Runtime.PYTHON_3_12,
-            code: aws_lambda.Code.fromAsset('../../iot-connect'),
+            code: aws_lambda.Code.fromAsset('../iot-connect'),
             handler: 'creds_provider.creds_provider_handler',
             role: credsProviderLambdaRole,  // Attach the role with the necessary permissions
             memorySize: 128,
