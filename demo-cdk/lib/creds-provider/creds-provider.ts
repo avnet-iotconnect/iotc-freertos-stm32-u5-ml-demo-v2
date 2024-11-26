@@ -44,7 +44,7 @@ export class CredsProviderConstruct extends Construct {
             handler: 'creds_provider.creds_provider_handler',
             role: credsProviderLambdaRole,  // Attach the role with the necessary permissions
             memorySize: 128,
-            timeout: cdk.Duration.seconds(2),
+            timeout: cdk.Duration.seconds(60),
             environment: {
                 IOTCONNECT_USERNAME: iotConnectUsername,
                 IOTCONNECT_PASSWORD: iotConnectPassword,
