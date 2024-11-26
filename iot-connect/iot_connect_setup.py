@@ -3,8 +3,8 @@
 import argparse
 import requests
 
-from authentication import authenticate
-from constants import (
+from common.authentication import authenticate
+from common.constants import (
     DEVICE_TEMPLATES_DIR,
     TEMPLATES_TAIL,
     API_DEVICE_URL,
@@ -15,8 +15,8 @@ from constants import (
     DEVICE_WITH_SOUND_CLASS,
     DEVICE_CREATE
 )
-from check_status import check_status, BadHttpStatusException
-from common import (
+from common.check_status import check_status, BadHttpStatusException
+from common.common import (
     get_template_guid,
     get_entity_guid,
     get_device_guid

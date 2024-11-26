@@ -5,8 +5,8 @@ import requests
 import string
 import random
 
-from authentication import authenticate
-from constants import (
+from common.authentication import authenticate
+from common.constants import (
     DEVICE_TEMPLATES_DIR,
     TEMPLATES_TAIL,
     API_DEVICE_URL,
@@ -31,8 +31,8 @@ from constants import (
     OTA_UPDATE,
     MAX_FW_VERSION_SIZE
 )
-from check_status import check_status, BadHttpStatusException
-from common import (
+from common.check_status import check_status, BadHttpStatusException
+from common.common import (
     get_template_guid,
     get_entity_guid
 )

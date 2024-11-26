@@ -27,37 +27,12 @@ export class CredsProviderConstruct extends Construct {
         );
 
         // Create the Lambda function for basic authentication
-        const credsProviderLambda = new aws_lambda.Function(this, 'CredsProviderLambda', {
-            runtime: aws_lambda.Runtime.PYTHON_3_12,
-            code: aws_lambda.Code.fromAsset(
-                '../iot-connect',
-                {
-                    bundling: {
-                    image: aws_lambda.Runtime.PYTHON_3_12.bundlingImage,
-                    command: [
-                        'bash', '-c',
-                        'pip install -r requirements.txt -t /asset-output && cp -au . /asset-output'
-                    ],
-                    },
-                }
-            ),
-            handler: 'creds_provider.creds_provider_handler',
-            role: credsProviderLambdaRole,  // Attach the role with the necessary permissions
-            memorySize: 128,
-            timeout: cdk.Duration.seconds(60),
-            environment: {
-                IOTCONNECT_USERNAME: iotConnectUsername,
-                IOTCONNECT_PASSWORD: iotConnectPassword,
-                IOTCONNECT_SOLUTION_KEY: iotConnectSolutionKey
-            },
-        });
-
-        const credsProviderLayerTestLayer = new aws_lambda.LayerVersion(this, 'CredsProviderLayerTestLayer', {
+        const credsProviderLayer = new aws_lambda.LayerVersion(this, 'CredsProviderLayer', {
             code: aws_lambda.Code.fromAsset('../iot-connect-layer'),
             compatibleRuntimes: [aws_lambda.Runtime.PYTHON_3_12]
         });
 
-        const credsProviderLayerTestLambda = new aws_lambda.Function(this, 'CredsProviderLayerTestLambda', {
+        const credsProviderLambda = new aws_lambda.Function(this, 'CredsProviderLambda', {
             runtime: aws_lambda.Runtime.PYTHON_3_12,
             code: aws_lambda.Code.fromAsset(
                 'lambdas/creds_provider_test',
@@ -80,7 +55,7 @@ export class CredsProviderConstruct extends Construct {
                 IOTCONNECT_PASSWORD: iotConnectPassword,
                 IOTCONNECT_SOLUTION_KEY: iotConnectSolutionKey
             },
-            layers: [credsProviderLayerTestLayer]
+            layers: [credsProviderLayer]
         });
 
         // // Create API Gateway for basic authentication

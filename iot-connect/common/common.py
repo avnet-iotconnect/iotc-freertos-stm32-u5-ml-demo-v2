@@ -2,14 +2,14 @@
 
 import requests
 
-from constants import (
+from .constants import (
     API_DEVICE_URL,
     DEVICE_TEMPLATE_LIST,
     API_USER_URL,
     ENTITY_LIST,
     DEVICE_CREATE
 )
-from check_status import check_status
+from .check_status import check_status
 
 
 def get_template_guid(template_name: str, access_token: str) -> str:

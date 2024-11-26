@@ -2,8 +2,8 @@
 
 import argparse
 import requests
-from constants import API_AUTH_URL, BASIC_TOKEN, LOGIN
-from check_status import check_status
+from .constants import API_AUTH_URL, BASIC_TOKEN, LOGIN
+from .check_status import check_status
 
 
 class Credentials:

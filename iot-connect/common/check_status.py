@@ -4,7 +4,7 @@ If status is bad it raises custom BadHttpStatusException
 """
 
 import requests
-from constants import STATUS_OK
+from .constants import STATUS_OK
 
 
 class BadHttpStatusException(BaseException):
