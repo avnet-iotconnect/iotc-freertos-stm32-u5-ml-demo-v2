@@ -5,8 +5,7 @@ import {
     SecretValue,
     aws_apigateway,
     aws_iam,
-    aws_lambda,
-    aws_logs
+    aws_lambda
   } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { isProxy } from 'util/types';
@@ -60,32 +59,11 @@ export class CredsProviderConstruct extends Construct {
             layers: [credsProviderLayer]
         });
 
-        const apiResourcePolicy = new aws_iam.PolicyDocument({
-            statements: [
-                new aws_iam.PolicyStatement({
-                    effect: aws_iam.Effect.ALLOW,
-                    actions: [
-                        'logs:*'
-                    ],
-                    resources: ['*']
-                }),
-            ],
-        })
-
         // Create API Gateway for basic authentication
-        const prdLogGroup = new aws_logs.LogGroup(this, "PrdLogs");
         const apiGateway = new aws_apigateway.RestApi(this, 'CredentialsWebhook', {
             restApiName: 'CretsWebhookApi',
             description: 'Webhook to provide credentials to the IoT Connect device.',
-            deployOptions: {
-                accessLogDestination: new aws_apigateway.LogGroupLogDestination(prdLogGroup),
-                accessLogFormat: aws_apigateway.AccessLogFormat.jsonWithStandardFields(),
-            },
-            policy: apiResourcePolicy
         });
-        
-        const deployment = new aws_apigateway.Deployment(this, 'Deployment', {api: apiGateway});
-
 
         const webhookResource = apiGateway.root.addResource('webhook');
         // Lambda integration for basic auth

@@ -13,3 +13,13 @@ def creds_provider_handler(event, context):
     # access_token = authenticate(username, password, solution_key)
     authenticate(username, password, solution_key)
     print("Successful login - now create device templates.")
+
+    res = {
+        "statusCode": 200,
+        "headers": {
+            "Content-Type": "*/*"
+        },
+        "body": "Hello, "
+    }
+
+    return res
