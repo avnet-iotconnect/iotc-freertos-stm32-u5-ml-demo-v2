@@ -70,7 +70,7 @@ export class CredsProviderConstruct extends Construct {
                 accessLogFormat: aws_apigateway.AccessLogFormat.jsonWithStandardFields(),
             },
         });
-        const deployment = new aws_apigateway.Deployment(this, 'Deployment', {apiGateway});
+        const deployment = new aws_apigateway.Deployment(this, 'Deployment', {api: apiGateway});
 
 
         const webhookResource = apiGateway.root.addResource('webhook');
