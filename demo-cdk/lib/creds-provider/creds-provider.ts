@@ -8,6 +8,7 @@ import {
     aws_lambda
   } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { isProxy } from 'util/types';
 
 export class CredsProviderConstruct extends Construct {
     constructor(scope: Construct, id: string) {
@@ -58,18 +59,23 @@ export class CredsProviderConstruct extends Construct {
             layers: [credsProviderLayer]
         });
 
-        // // Create API Gateway for basic authentication
-        // const apiGateway = new aws_apigateway.RestApi(this, 'CredentialsWebhook', {
-        //     restApiName: 'CretsWebhookApi',
-        //     description: 'Webhook to provide credentials to the IoT Connect device.',
-        // });
+        // Create API Gateway for basic authentication
+        const apiGateway = new aws_apigateway.RestApi(this, 'CredentialsWebhook', {
+            restApiName: 'CretsWebhookApi',
+            description: 'Webhook to provide credentials to the IoT Connect device.',
+        });
 
-        // const webhookResource = apiGateway.root.addResource('webhook');
-        // // Lambda integration for basic auth
-        // const lambdaIntegration = new aws_apigateway.LambdaIntegration();
+        const webhookResource = apiGateway.root.addResource('webhook');
+        // Lambda integration for basic auth
+        const lambdaIntegration = new aws_apigateway.LambdaIntegration(
+            credsProviderLambda,
+            {
+                proxy: true
+            }
+        );
 
-        // webhookResource.addMethod('POST', lambdaIntegration, {
-        //     authorizationType: aws_apigateway.AuthorizationType.NONE,
-        // });
+        webhookResource.addMethod('POST', lambdaIntegration, {
+            authorizationType: aws_apigateway.AuthorizationType.NONE,
+        });
     }
 }
