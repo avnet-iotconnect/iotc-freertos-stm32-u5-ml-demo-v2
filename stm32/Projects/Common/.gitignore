@@ -3,3 +3,4 @@
 !/.gitignore
 !/app
 !/config
+!/s3_client
