@@ -2,6 +2,8 @@
 
 import os
 import requests
+import secrets
+import boto3
 
 from common.authentication import authenticate
 from common.constants import (
@@ -18,11 +20,41 @@ from common.common import (
     get_entity_guid
 )
 
+
+KEY_LENGTH = 32
+
 def create_resources_handler(event, context):
     # Create necessary resources
     print("event")
     print(event)
+    create_s3_api_key_and_save()
     create_webhook_rules()
+
+def create_s3_api_key_and_save():
+    # Create S3 API Key and save to secret
+    secret_name = os.environ['S3_KEY_SECRET_NAME']
+    key_placeholder = os.environ['KEY_PLACEHOLDER']
+    region = os.environ['AWS_REGION']
+    session = boto3.session.Session()
+    secrets_client = session.client(
+        service_name='secretsmanager',
+        region_name=region
+    )
+    print("Check if key already exists")
+    key_value = secrets_client.get_secret_value(
+        SecretId=secret_name
+    )["SecretString"]
+
+    if(key_value == key_placeholder):
+        print("Create a new API Key")
+        generated_key = secrets.token_urlsafe(KEY_LENGTH)
+        secrets_client.put_secret_value(
+            SecretId=secret_name,
+            SecretString=generated_key
+        )
+        print("Key stored in the secret")
+    else:
+        print("Key already exists, skip new key creation")
 
 def create_webhook_rules():
     # Create Webhook URL in the IoTConnect

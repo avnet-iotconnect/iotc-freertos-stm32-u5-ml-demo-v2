@@ -170,5 +170,7 @@ export class CredsProviderConstruct extends Construct {
 
         // Create additional resources
         const CredsProviderResourcesLambda = new CredsProviderResourcesLambdaConstruct(this, 'WebsiteConstruct', s3ApiKeySecret, webhookResourceEndpoint);
+        CredsProviderResourcesLambda.node.addDependency(apiGateway)
+        CredsProviderResourcesLambda.node.addDependency(s3ApiKeySecret)
     }
 }

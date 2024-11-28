@@ -31,6 +31,7 @@ jobs:
         run: python ./iot_connect_setup.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY" "$ENTITY_NAME" "$CERTIFICATE"
 
   aws_cdk:
+    needs: iot_connect
     runs-on: ubuntu-latest
     steps:
       - name: Check out code

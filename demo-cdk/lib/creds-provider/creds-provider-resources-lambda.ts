@@ -7,7 +7,8 @@ import {
     aws_iam,
     aws_lambda,
     aws_sqs,
-    aws_lambda_event_sources
+    aws_lambda_event_sources,
+    custom_resources
   } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
@@ -15,6 +16,7 @@ export class CredsProviderResourcesLambdaConstruct extends Construct {
     constructor(scope: Construct, id: string, s3ApiKeySecret: aws_secretsmanager.Secret, webhookEndpoint: string) {
         super(scope, id);
 
+        const config = this.node.tryGetContext('config');
         const iotConnectUsername = this.node.tryGetContext('iotConnectUsername');
         const iotConnectPassword = this.node.tryGetContext('iotConnectPassword');
         const iotConnectSolutionKey = this.node.tryGetContext('iotConnectSolutionKey');
@@ -29,6 +31,7 @@ export class CredsProviderResourcesLambdaConstruct extends Construct {
         );
 
         s3ApiKeySecret.grantWrite(createResourcesLambdaRole);
+        s3ApiKeySecret.grantRead(createResourcesLambdaRole);
 
         // Create the Lambda function for basic authentication
         const createResourcesLayer = new aws_lambda.LayerVersion(this, 'CreateResourcesLayer', {
@@ -37,10 +40,10 @@ export class CredsProviderResourcesLambdaConstruct extends Construct {
         });
 
         // This Lamdba will create additional resources during deploy - Api Key for S3 endpoints and rule in IoTConnect
-        const createResourcesLambdaLambda = new aws_lambda.Function(this, 'CredsProviderLambda', {
+        const createResourcesLambda = new aws_lambda.Function(this, 'CreateResourcesLambda', {
             runtime: aws_lambda.Runtime.PYTHON_3_12,
             code: aws_lambda.Code.fromAsset(
-                'lambdas/creds_provider',
+                'lambdas/create_resources',
                 {
                     bundling: {
                     image: aws_lambda.Runtime.PYTHON_3_12.bundlingImage,
@@ -51,7 +54,7 @@ export class CredsProviderResourcesLambdaConstruct extends Construct {
                     },
                 }
             ),
-            handler: 'creds_provider.creds_provider_handler',
+            handler: 'create_resources.create_resources_handler',
             role: createResourcesLambdaRole,  // Attach the role with the necessary permissions
             memorySize: 128,
             timeout: cdk.Duration.seconds(60),
@@ -60,9 +63,40 @@ export class CredsProviderResourcesLambdaConstruct extends Construct {
                 IOTCONNECT_PASSWORD: iotConnectPassword,
                 IOTCONNECT_SOLUTION_KEY: iotConnectSolutionKey,
                 IOTCONNECT_ENTITY: iotConnectEntity,
-                WEBHOOK_ENDPOINT: webhookEndpoint
+                WEBHOOK_ENDPOINT: webhookEndpoint,
+                S3_KEY_SECRET_NAME: s3ApiKeySecret.secretName,
+                KEY_PLACEHOLDER: config.s3ApiKeyPlaceHolder,
+                AWS_REGION: cdk.Stack.of(this).region;
             },
             layers: [createResourcesLayer]
+        });
+
+        const lambdaCustomResource = new custom_resources.AwsCustomResource(this, 'LambdaCustomResource', {
+            onCreate: {
+                service: 'Lambda',
+                action: 'invoke',
+                parameters: {
+                    FunctionName: createResourcesLambda.functionName,
+                    InvocationType: 'RequestResponse',
+                },
+            },
+            onUpdate: {  // Ensure the Lambda is invoked on updates as well
+                service: 'Lambda',
+                action: 'invoke',
+                parameters: {
+                  FunctionName: createResourcesLambda.functionName,
+                  InvocationType: 'RequestResponse',
+                },
+            },
+            // Define an explicit policy that allows invoking the Lambda function
+            policy: custom_resources.AwsCustomResourcePolicy.fromStatements([
+                new aws_iam.PolicyStatement({
+                actions: ['lambda:InvokeFunction'],
+                effect: aws_iam.Effect.ALLOW,
+                resources: [createResourcesLambda.functionArn],
+                }),
+            ]),
+            resourceType: 'Custom::LambdaCustomResourceAction',
         });
     }
 }
