@@ -7,6 +7,8 @@ import {
 import { Construct } from 'constructs';
 
 export class SecretsConstruct extends Construct {
+    public readonly s3ApiKeySecret: aws_secretsmanager.Secret;
+
     constructor(scope: Construct, id: string) {
         super(scope, id);
         const config = this.node.tryGetContext('config');
@@ -21,6 +23,11 @@ export class SecretsConstruct extends Construct {
         new aws_secretsmanager.Secret(this, 'stPasswordSecret', {
             secretName: config.stPasswordSecret,
             secretStringValue: SecretValue.unsafePlainText(stPassword),
+        });
+
+        this.s3ApiKeySecret = new aws_secretsmanager.Secret(this, 's3ApiKeySecret', {
+            secretName: config.s3ApiKeySecret,
+            secretStringValue: SecretValue.unsafePlainText(config.s3ApiKeyPlaceHolder),
         });
     }
 }

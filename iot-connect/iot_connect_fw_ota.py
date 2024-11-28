@@ -7,18 +7,7 @@ import random
 
 from common.authentication import authenticate
 from common.constants import (
-    DEVICE_TEMPLATES_DIR,
-    TEMPLATES_TAIL,
-    API_DEVICE_URL,
-    DEVICE_TEMPLATE_CREATE,
-    DEVICE_TEMPLATE_LIST,
-    DEVICE_TEMPLATE_ALREADY_EXISTS,
-    DEVICE_ALREADY_EXISTS,
-    DEVICE_WITH_SOUND_GEN,
-    DEVICE_WITH_SOUND_CLASS,
-    DEVICE_CREATE,
-    ENTITY_LIST,
-    API_USER_URL,
+    DEVICE_SOUND_CLASS,
     FW_OTA_FILE,
     API_FW_URL,
     FW_ADD,
@@ -43,7 +32,7 @@ def iot_connect_fw_ota():
     args = parse_arguments()
     access_token = authenticate(args.username, args.password, args.solution_key)
     print("Successful login - now create OTA update for the device.")
-    template_guid = get_template_guid(DEVICE_WITH_SOUND_CLASS, access_token)
+    template_guid = get_template_guid(DEVICE_SOUND_CLASS, access_token)
 
     hw_version = "1.0.0"
     fw_version = ''.join(random.choices(string.ascii_uppercase + string.digits, k=MAX_FW_VERSION_SIZE))

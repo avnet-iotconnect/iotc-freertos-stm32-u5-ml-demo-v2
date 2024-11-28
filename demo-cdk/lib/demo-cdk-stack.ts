@@ -10,9 +10,9 @@ export class DemoCdkStack extends cdk.Stack {
     super(scope, id, props);
     console.log(cdk.Stack.of(this).region,'cdk.Stack.of(this).region22')
 
-    new SecretsConstruct(this, 'SecretsConstruct');
+    const secretsConstruct = new SecretsConstruct(this, 'SecretsConstruct');
     new FWBuildConstruct(this, 'FWBuildConstruct');
     new MlConstruct(this, 'MlConstruct');
-    new CredsProviderConstruct(this, 'CredsProviderConstruct');
+    new CredsProviderConstruct(this, 'CredsProviderConstruct', secretsConstruct.s3ApiKeySecret);
   }
 }

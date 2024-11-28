@@ -13,7 +13,7 @@ import { CredsProviderResourcesLambdaConstruct } from './creds-provider-resource
 import { Construct } from 'constructs';
 
 export class CredsProviderConstruct extends Construct {
-    constructor(scope: Construct, id: string) {
+    constructor(scope: Construct, id: string, s3ApiKeySecret: aws_secretsmanager.Secret) {
         super(scope, id);
 
         const iotConnectUsername = this.node.tryGetContext('iotConnectUsername');
@@ -161,17 +161,14 @@ export class CredsProviderConstruct extends Construct {
                 }
             ]
         });
-        webhookResource;
-        new cdk.CfnOutput(this, 'webhookResourcePath', {
-            value: `${webhookResource.path}`,
-            description: 'The Path for the webhookResource',
-        });
-        new cdk.CfnOutput(this, 'apiiGatewayURL', {
-            value: `${apiGateway.url}`,
-            description: 'The API Gateway for the webhookResource',
+        
+        const webhookResourceEndpoint = apiGateway.url.slice(0, -1) + webhookResource.path; 
+        new cdk.CfnOutput(this, 'webhookResourceEndpoint', {
+            value: `${webhookResourceEndpoint}`,
+            description: 'The URL for the webhookResource',
         });
 
         // Create additional resources
-        // const CredsProviderResourcesLambda = new CredsProviderResourcesLambdaConstruct(this, 'WebsiteConstruct', );
+        const CredsProviderResourcesLambda = new CredsProviderResourcesLambdaConstruct(this, 'WebsiteConstruct', s3ApiKeySecret, webhookResourceEndpoint);
     }
 }

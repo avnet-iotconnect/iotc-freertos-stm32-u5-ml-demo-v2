@@ -7,7 +7,8 @@ from .constants import (
     DEVICE_TEMPLATE_LIST,
     API_USER_URL,
     ENTITY_LIST,
-    DEVICE_CREATE
+    DEVICE_CREATE,
+    RULE
 )
 from .check_status import check_status
 
@@ -59,3 +60,22 @@ def get_entity_guid(entity_name: str, access_token: str) -> str:
     print(f"Entity guid for {entity_name} entity is {entity_guid}")
 
     return entity_guid
+
+def get_rule_guid(device_name: str, access_token: str) -> str:
+    """Returns device guid from the IoTConnect"""
+    headers = {
+        "Authorization": access_token
+    }
+    params = {
+        "name": device_name
+    }
+    response = requests.get(API_DEVICE_URL + RULE, headers = headers, params = params)
+    check_status(response)
+    response_json = response.json()
+    # print(response_json)
+    device_guid = ""
+
+    if (len(response_json["data"]) > 0):
+        device_guid = response_json["data"][0]["guid"]
+
+    return device_guid

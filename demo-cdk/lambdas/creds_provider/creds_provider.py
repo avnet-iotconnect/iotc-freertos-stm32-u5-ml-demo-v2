@@ -5,6 +5,7 @@ import os
 from common.authentication import authenticate
 
 def creds_provider_handler(event, context):
+    # Send credentials to the devices via the IoTConnect command
     print("event")
     print(event)
     username = os.environ['IOTCONNECT_USERNAME']
