@@ -71,7 +71,7 @@ export class CredsProviderConstruct extends Construct {
                 'integration.request.header.Content-Type': `'application/x-www-form-urlencoded'`,
               },
               requestTemplates: {
-                'application/json': `Action=SendMessage&MessageBody=$util.urlEncode("$method.request.querystring.message")`,
+                'text/plain': `Action=SendMessage&MessageBody=$util.urlEncode("$method.request.querystring.message")`,
               },
               integrationResponses: [
                 {
