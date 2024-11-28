@@ -53,7 +53,7 @@ export class CredsProviderConstruct extends Construct {
                                 'sqs:DeleteMessage',
                             ],
                             resources: [
-                                apiGatewaySqsRole.roleArn
+                                apiQueue.queueArn
                             ]
                         })
                     ]
