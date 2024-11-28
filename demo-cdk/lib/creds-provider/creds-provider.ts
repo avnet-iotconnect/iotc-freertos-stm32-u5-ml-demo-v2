@@ -9,8 +9,8 @@ import {
     aws_sqs,
     aws_lambda_event_sources
   } from 'aws-cdk-lib';
+import { CredsProviderResourcesLambdaConstruct } from './creds-provider-resources-lambda';
 import { Construct } from 'constructs';
-import { isProxy } from 'util/types';
 
 export class CredsProviderConstruct extends Construct {
     constructor(scope: Construct, id: string) {
@@ -161,5 +161,17 @@ export class CredsProviderConstruct extends Construct {
                 }
             ]
         });
+        webhookResource;
+        new cdk.CfnOutput(this, 'webhookResourcePath', {
+            value: `${webhookResource.path}`,
+            description: 'The Path for the webhookResource',
+        });
+        new cdk.CfnOutput(this, 'apiiGatewayURL', {
+            value: `${apiGateway.url}`,
+            description: 'The API Gateway for the webhookResource',
+        });
+
+        // Create additional resources
+        // const CredsProviderResourcesLambda = new CredsProviderResourcesLambdaConstruct(this, 'WebsiteConstruct', );
     }
 }
