@@ -54,10 +54,6 @@ jobs:
         working-directory: ./demo-cdk
         run: npm i -g aws-cdk
 
-      - name: Install AWS CDK
-        working-directory: ./demo-cdk
-        run: sudo apt install openssl
-
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
