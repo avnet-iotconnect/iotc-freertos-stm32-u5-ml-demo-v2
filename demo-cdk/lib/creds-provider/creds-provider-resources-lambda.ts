@@ -66,7 +66,7 @@ export class CredsProviderResourcesLambdaConstruct extends Construct {
                 WEBHOOK_ENDPOINT: webhookEndpoint,
                 S3_KEY_SECRET_NAME: s3ApiKeySecret.secretName,
                 KEY_PLACEHOLDER: config.s3ApiKeyPlaceHolder,
-                AWS_REGION: cdk.Stack.of(this).region;
+                AWS_REGION: cdk.Stack.of(this).region
             },
             layers: [createResourcesLayer]
         });
