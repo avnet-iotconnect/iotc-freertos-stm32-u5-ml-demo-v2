@@ -68,10 +68,8 @@ export class CredsProviderConstruct extends Construct {
             options: {
               credentialsRole: apiGatewaySqsRole,
               requestParameters: {
-                'integration.request.header.Content-Type': `'application/x-www-form-urlencoded'`,
-              },
-              requestTemplates: {
-                'application/json': 'Action=SendMessage&MessageBody=$input.body',
+                'QueueUrl': apiQueue.queueUrl,
+                'MessageBody': '$request.body.MessageBody',
               },
               integrationResponses: [
                 {
