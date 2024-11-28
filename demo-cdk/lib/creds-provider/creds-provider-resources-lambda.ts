@@ -1,4 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
+import * as crypto from 'crypto';  // Import crypto to generate a hash for physicalResourceId
 import {
     CfnParameter,
     aws_secretsmanager,
@@ -71,6 +72,14 @@ export class CredsProviderResourcesLambdaConstruct extends Construct {
             layers: [createResourcesLayer]
         });
 
+        // Grant invoke permission for the custom resource
+        createResourcesLambda.grantInvoke(new aws_iam.ServicePrincipal('cloudformation.amazonaws.com'));
+
+        // Generate a hash of the Lambda code or environment variables to use as a physical resource ID
+        const functionVersionHash = crypto.createHash('sha256')
+        .update(createResourcesLambda.functionArn)  // You can also add other dynamic values here
+        .digest('hex');
+
         const lambdaCustomResource = new custom_resources.AwsCustomResource(this, 'LambdaCustomResource', {
             onCreate: {
                 service: 'Lambda',
@@ -79,6 +88,7 @@ export class CredsProviderResourcesLambdaConstruct extends Construct {
                     FunctionName: createResourcesLambda.functionName,
                     InvocationType: 'RequestResponse',
                 },
+                physicalResourceId: custom_resources.PhysicalResourceId.of(functionVersionHash),
             },
             onUpdate: {  // Ensure the Lambda is invoked on updates as well
                 service: 'Lambda',
@@ -87,6 +97,7 @@ export class CredsProviderResourcesLambdaConstruct extends Construct {
                   FunctionName: createResourcesLambda.functionName,
                   InvocationType: 'RequestResponse',
                 },
+                physicalResourceId: custom_resources.PhysicalResourceId.of(functionVersionHash),
             },
             // Define an explicit policy that allows invoking the Lambda function
             policy: custom_resources.AwsCustomResourcePolicy.fromStatements([
