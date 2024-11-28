@@ -1,5 +1,2 @@
-pyOpenSSL
 requests
-cryptography
-secrets
 boto3
