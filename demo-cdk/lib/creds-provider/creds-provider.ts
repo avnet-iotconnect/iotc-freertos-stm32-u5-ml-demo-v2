@@ -71,16 +71,19 @@ export class CredsProviderConstruct extends Construct {
                 'integration.request.header.Content-Type': `'application/x-www-form-urlencoded'`,
               },
               requestTemplates: {
-                'text/plain': `Action=SendMessage&MessageBody=$input.body`,
+                'application/json': 'Action=SendMessage&MessageBody=$input.body',
               },
               integrationResponses: [
                 {
-                  statusCode: "200",
-                  responseTemplates: {
-                    "application/json": `{"done": true}`,
-                  },
+                  statusCode: '200',
                 },
-              ],
+                {
+                  statusCode: '400',
+                },
+                {
+                  statusCode: '500',
+                }
+              ]
             },
           });
 
@@ -147,8 +150,14 @@ export class CredsProviderConstruct extends Construct {
 
         webhookResource.addMethod('POST', sqsIntegration, {
             methodResponses: [
+                {
+                    statusCode: '400',
+                },
                 { 
                     statusCode: '200',
+                },
+                {
+                    statusCode: '500',
                 }
             ]
         });
