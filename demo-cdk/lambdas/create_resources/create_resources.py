@@ -34,7 +34,7 @@ def create_s3_api_key_and_save():
     # Create S3 API Key and save to secret
     secret_name = os.environ['S3_KEY_SECRET_NAME']
     key_placeholder = os.environ['KEY_PLACEHOLDER']
-    region = os.environ['AWS_REGION']
+    region = os.environ['REGION']
     session = boto3.session.Session()
     secrets_client = session.client(
         service_name='secretsmanager',
