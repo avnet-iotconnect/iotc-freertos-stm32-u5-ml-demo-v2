@@ -39,8 +39,7 @@ def creds_provider_handler(event, context):
     api_key = secrets_client.get_secret_value(
         SecretId=api_key_secret
     )["SecretString"]
-    # access_token = authenticate(username, password, solution_key)
-    authenticate(username, password, solution_key)
+    access_token = authenticate(username, password, solution_key)
     print(f"Successful login - send command to the device {DEVICE_SOUND_CLASS}")
     template_guid = get_template_guid(DEVICE_SOUND_CLASS, access_token)
     entity_guid = get_entity_guid(args.entity_name, access_token)
