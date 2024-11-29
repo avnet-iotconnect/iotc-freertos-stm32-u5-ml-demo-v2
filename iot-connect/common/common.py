@@ -8,7 +8,9 @@ from .constants import (
     API_USER_URL,
     ENTITY_LIST,
     DEVICE_CREATE,
-    RULE
+    RULE,
+    COMMAND,
+    CREDS_S3_COMMAND
 )
 from .check_status import check_status
 
@@ -73,9 +75,33 @@ def get_rule_guid(device_name: str, access_token: str) -> str:
     check_status(response)
     response_json = response.json()
     # print(response_json)
-    device_guid = ""
+    rule_guid = ""
 
     if (len(response_json["data"]) > 0):
-        device_guid = response_json["data"][0]["guid"]
+        rule_guid = response_json["data"][0]["guid"]
 
-    return device_guid
+    return rule_guid
+
+def get_command_guid(template_guid: str, access_token: str) -> str:
+    """Returns device guid from the IoTConnect"""
+    headers = {
+        "Authorization": access_token
+    }
+    params = {
+        "deviceTemplateGuid": template_guid
+    }
+    response = requests.get(API_DEVICE_URL + COMMAND + template_guid, headers = headers, params = params)
+    check_status(response)
+    response_json = response.json()
+    # print(response_json)
+    command_guid = ""
+
+    for commands in response_json["data"]:
+        if commands["command"] == CREDS_S3_COMMAND:
+            command_guid = commands["guid"]
+            print(f"S3 creds command guid {command_guid}")
+            return command_guid
+
+    print("Command not found")
+
+    return command_guid

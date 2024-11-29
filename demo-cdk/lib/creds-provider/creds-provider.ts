@@ -122,10 +122,14 @@ export class CredsProviderConstruct extends Construct {
             environment: {
                 IOTCONNECT_USERNAME: iotConnectUsername,
                 IOTCONNECT_PASSWORD: iotConnectPassword,
-                IOTCONNECT_SOLUTION_KEY: iotConnectSolutionKey
+                IOTCONNECT_SOLUTION_KEY: iotConnectSolutionKey,
+                S3_ENDPOINT: "https://www.google.com/",
+                S3_KEY_SECRET_NAME: s3ApiKeySecret.secretName,
             },
             layers: [credsProviderLayer]
         });
+
+        s3ApiKeySecret.grantRead(credsProviderLambdaRole)
 
         credsProviderLambda.addEventSource(sqsEventSource);
 
@@ -136,18 +140,6 @@ export class CredsProviderConstruct extends Construct {
         });
 
         const webhookResource = apiGateway.root.addResource('webhook');
-        // Lambda integration for basic auth
-        // const lambdaIntegration = new aws_apigateway.LambdaIntegration(
-        //     credsProviderLambda,
-        //     {
-        //         proxy: true
-        //     }
-        // );
-
-        // webhookResource.addMethod('POST', lambdaIntegration, {
-        //     authorizationType: aws_apigateway.AuthorizationType.NONE,
-        // });
-
         webhookResource.addMethod('POST', sqsIntegration, {
             methodResponses: [
                 {

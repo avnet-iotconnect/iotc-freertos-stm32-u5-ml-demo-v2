@@ -22,6 +22,8 @@ FIRMWARE_UPGRADE_PUBLISH = "/publish"
 OTA_UPDATE = "ota-update"
 RULE = "Rule"
 SEVERETY_LOOKUP = "severity-level/lookup"
+COMMAND = "template-command/"
+COMMAND_SEND = "template-command/send"
 
 DEVICE_TEMPLATES_DIR = "templates/devices/"
 TEMPLATES_TAIL = "_template.JSON"
@@ -39,3 +41,8 @@ FW_PREFIX = "SC"
 MAX_FW_VERSION_SIZE = 8
 
 OTA_TARGET_ENTITY = 1
+
+CREDS_S3_COMMAND = "creds_s3"
+
+S3_ENDPOINT_HEADER = "endpoint"
+S3_APIKEY_HEADER = "apikey"

@@ -94,13 +94,13 @@ def delete_rule(guid: str, access_token: str):
 
 def creat_rule(rule_name: str, webhook_url: str, template_guid: str, entity_guid: str, access_token: str):
     """Create device in IoTConnect from given data"""
-    magor_guid = get_magor_guid(access_token)
+    major_guid = get_major_guid(access_token)
 
     data = {
         "ruleType": 1,
         "templateGuid": template_guid,
         "name": rule_name,
-        "severityLevelGuid": magor_guid,
+        "severityLevelGuid": major_guid,
         "conditionText": "request_s3 = True",
         "ignorePreference": False,
         "applyTo": 1,
@@ -118,8 +118,8 @@ def creat_rule(rule_name: str, webhook_url: str, template_guid: str, entity_guid
     response = requests.post(API_DEVICE_URL + RULE, json = data, headers = headers)
 
     check_status(response)
-    device_guid = get_rule_guid_from_response(response)
-    print(f"Rule {rule_name} created with guid {device_guid}")
+    rule_guid = get_rule_guid_from_response(response)
+    print(f"Rule {rule_name} created with guid {rule_guid}")
 
 def get_rule_guid_from_response(response: requests.Response) -> str:
     """Returns template guid from the response"""
@@ -128,7 +128,7 @@ def get_rule_guid_from_response(response: requests.Response) -> str:
     guid = response_json["data"][0]["ruleGuid"]
     return guid
 
-def get_magor_guid(access_token: str) -> str:
+def get_major_guid(access_token: str) -> str:
     """Returns major severty level guid from the IoTConnect"""
     headers = {
         "Authorization": access_token

@@ -1,4 +1,4 @@
-"""This module performs partial IoTConnect OTA FW Update."""
+"""This module performs IoTConnect OTA FW Update."""
 
 import argparse
 import requests
