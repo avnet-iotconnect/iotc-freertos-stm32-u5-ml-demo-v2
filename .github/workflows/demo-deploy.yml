@@ -31,6 +31,7 @@ jobs:
         run: python ./iot_connect_setup.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY" "$ENTITY_NAME" "$CERTIFICATE"
 
   aws_cdk:
+    needs: iot_connect
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -59,6 +60,13 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Prepare Lambda layer
+        run: |
+          mkdir -p "iot-connect-layer/python"
+          cp -R "iot-connect/common" "iot-connect-layer/python"
+          ls -la "iot-connect-layer/python"
+          ls -la "iot-connect-layer/python/common"
 
       - name: Synth stack
         working-directory: ./demo-cdk
