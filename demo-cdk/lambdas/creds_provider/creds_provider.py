@@ -28,6 +28,7 @@ def creds_provider_handler(event, context):
     username = os.environ['IOTCONNECT_USERNAME']
     password = os.environ['IOTCONNECT_PASSWORD']
     solution_key = os.environ['IOTCONNECT_SOLUTION_KEY']
+    entity = os.environ['IOTCONNECT_ENTITY']
     endpoint_url = os.environ['S3_ENDPOINT']
     api_key_secret = os.environ['S3_KEY_SECRET_NAME']
     region = os.environ['REGION']
@@ -42,7 +43,7 @@ def creds_provider_handler(event, context):
     access_token = authenticate(username, password, solution_key)
     print(f"Successful login - send command to the device {DEVICE_SOUND_CLASS}")
     template_guid = get_template_guid(DEVICE_SOUND_CLASS, access_token)
-    entity_guid = get_entity_guid(args.entity_name, access_token)
+    entity_guid = get_entity_guid(entity, access_token)
     command_guid = get_command_guid(template_guid, access_token)
     send_command(command_guid, endpoint_url, api_key, entity_guid, access_token)
 

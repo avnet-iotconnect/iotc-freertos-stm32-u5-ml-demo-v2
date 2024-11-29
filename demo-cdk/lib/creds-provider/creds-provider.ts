@@ -123,6 +123,7 @@ export class CredsProviderConstruct extends Construct {
                 IOTCONNECT_USERNAME: iotConnectUsername,
                 IOTCONNECT_PASSWORD: iotConnectPassword,
                 IOTCONNECT_SOLUTION_KEY: iotConnectSolutionKey,
+                IOTCONNECT_ENTITY: iotConnectEntity,
                 S3_ENDPOINT: "https://www.google.com/",
                 S3_KEY_SECRET_NAME: s3ApiKeySecret.secretName,
                 REGION: cdk.Stack.of(this).region
