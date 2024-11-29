@@ -125,6 +125,7 @@ export class CredsProviderConstruct extends Construct {
                 IOTCONNECT_SOLUTION_KEY: iotConnectSolutionKey,
                 S3_ENDPOINT: "https://www.google.com/",
                 S3_KEY_SECRET_NAME: s3ApiKeySecret.secretName,
+                REGION: cdk.Stack.of(this).region
             },
             layers: [credsProviderLayer]
         });

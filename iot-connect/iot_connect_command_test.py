@@ -8,13 +8,13 @@ from common.authentication import authenticate
 from common.constants import (
     API_DEVICE_URL,
     DEVICE_SOUND_CLASS,
-    RULE,
-    COMMAND_SEND
+    COMMAND_SEND,
+    S3_ENDPOINT_HEADER,
+    S3_APIKEY_HEADER
 )
 from common.check_status import check_status, BadHttpStatusException
 from common.common import (
     get_template_guid,
-    get_rule_guid,
     get_entity_guid,
     get_command_guid
 )
@@ -53,8 +53,8 @@ def send_command(command_guid: str, endpoint_url: str, api_key: str, entity_guid
     """Create device in IoTConnect from given data"""
 
     parameter_value = {
-        "S3_ENDPOINT_HEADER": endpoint_url,
-        "S3_APIKEY_HEADER": api_key,
+        S3_ENDPOINT_HEADER: endpoint_url,
+        S3_APIKEY_HEADER: api_key,
     }
 
     parameter_value_json = json.dumps(parameter_value) 
@@ -63,6 +63,7 @@ def send_command(command_guid: str, endpoint_url: str, api_key: str, entity_guid
         "commandGuid": command_guid,
         "entityGuid": entity_guid,
         "applyTo": 1,
+        "isRecursive": False,
         "parameterValue": parameter_value_json
     }
 
