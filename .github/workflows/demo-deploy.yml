@@ -3,35 +3,35 @@ name: Solution Deploy
 on: workflow_dispatch
 
 jobs:
-  # iot_connect:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 2
+  iot_connect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
-  #     - name: Setup python environment
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: '3.12'
+      - name: Setup python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-  #     - name: Install dependencies
-  #       working-directory: ./iot-connect
-  #       run: pip install -r requirements.txt
+      - name: Install dependencies
+        working-directory: ./iot-connect
+        run: pip install -r requirements.txt
 
-  #     - name: Setup IoTConnect
-  #       working-directory: ./iot-connect
-  #       env:
-  #         USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
-  #         PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
-  #         SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
-  #         ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
-  #         CERTIFICATE: ${{ secrets.IOT_CONNECT_CERTIFICATE }}
-  #       run: python ./iot_connect_setup.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY" "$ENTITY_NAME" "$CERTIFICATE"
+      - name: Setup IoTConnect
+        working-directory: ./iot-connect
+        env:
+          USERNAME: ${{ secrets.IOT_CONNECT_USERNAME }}
+          PASSWORD: ${{ secrets.IOT_CONNECT_PASSWORD }}
+          SOLUTION_KEY: ${{ secrets.IOT_CONNECT_SOLUTION_KEY }}
+          ENTITY_NAME: ${{ secrets.IOT_CONNECT_ENTITY_NAME }}
+          CERTIFICATE: ${{ secrets.IOT_CONNECT_CERTIFICATE }}
+        run: python ./iot_connect_setup.py "$USERNAME" "$PASSWORD" "$SOLUTION_KEY" "$ENTITY_NAME" "$CERTIFICATE"
 
   aws_cdk:
-    # needs: iot_connect
+    needs: iot_connect
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
