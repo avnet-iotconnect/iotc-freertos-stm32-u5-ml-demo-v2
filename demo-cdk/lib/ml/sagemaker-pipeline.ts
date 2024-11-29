@@ -25,6 +25,9 @@ import {
   Token,
 } from 'aws-cdk-lib';
 import { ComputeType } from 'aws-cdk-lib/aws-codebuild';
+import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
+import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 type SageMakerPipelineProps = {
   project: aws_sagemaker.CfnProject;
@@ -142,15 +145,10 @@ export class SagmakerPipeline extends Construct {
       managedPolicies: [
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMFullAccess'),
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeBuildAdminAccess'),
+        aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
       ],
     });
 
-    // const { ref: waitCompletionUrl } = new aws_cloudformation.CfnWaitConditionHandle(
-    //   this,
-    //   'CfnWaitConditionHandle' + Date.now()
-    // );
-
-    console.log('aws_lambda_nodejs.NodejsFunction(this, {')
     const fn = new aws_lambda_nodejs.NodejsFunction(this, 'wait-handler', {
       runtime: aws_lambda.Runtime.NODEJS_18_X,
       environment: {
@@ -167,24 +165,59 @@ export class SagmakerPipeline extends Construct {
       role,
     });
 
-    // new aws_cloudformation.CfnWaitCondition(this, 'CfnWaitCondition' + Date.now(), {
-    //   handle: waitCompletionUrl,
-    //   timeout: '7200',
-    //   count: 1,
-    // });
+    const retrainTriggerFn = new aws_lambda_nodejs.NodejsFunction(this, 'retrain-trigger', {
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      environment: {
+        projectName: build.projectName,
+      },
+      bundling: {
+        esbuildArgs: {
+          '--packages': 'bundle',
+        },
+      },
+      role,
+    });
 
-    // build.onBuildSucceeded('BuildSucceed', {
-    //   target: new aws_events_targets.LambdaFunction(fn),
-    // });
-    // build.onBuildFailed('BuildFail', {
-    //   target: new aws_events_targets.LambdaFunction(fn),
-    // });
+    const logGroup = new logs.LogGroup(this, 'ApiGatewayAccessLogs', {
+      retention: logs.RetentionDays.ONE_DAY,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+    logGroup.grantWrite(new aws_iam.ServicePrincipal('apigateway.amazonaws.com'));
+    
 
-    // new triggers.Trigger(this, 'BuildTrigger', {
-    //   handler: fn,
-    //   invocationType: triggers.InvocationType.EVENT,
-    //   executeAfter: [build],
-    // });
+    const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', {
+      apiName: 'RetrainTriggerApi',
+    });
+
+    httpApi.addRoutes({
+      path: '/retrain_trigger',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration(
+          'RetrainTriggerIntegration',
+          retrainTriggerFn
+      ),
+    });
+
+    
+
+    const defaultStage = new apigatewayv2.CfnStage(this, 'HttpApiDefaultStage', {
+      apiId: httpApi.httpApiId,
+      stageName: '$default',
+      accessLogSettings: {
+          destinationArn: logGroup.logGroupArn,
+          format: JSON.stringify({
+              requestId: "$context.requestId",
+              ip: "$context.identity.sourceIp",
+              requestTime: "$context.requestTime",
+              httpMethod: "$context.httpMethod",
+              routeKey: "$context.routeKey",
+              status: "$context.status",
+              protocol: "$context.protocol",
+              responseLength: "$context.responseLength",
+          }),
+      },
+      autoDeploy: true,
+    });
 
     const key = new aws_kms.Key(this, 'KMS', {
       removalPolicy: RemovalPolicy.DESTROY,
@@ -195,13 +228,5 @@ export class SagmakerPipeline extends Construct {
       secretStringValue: SecretValue.unsafePlainText(mlOutputBucket.bucketArn),
       encryptionKey: key,
     });
-
-    // for (const { account } of config.envs.iot) {
-    //   const remotePrincipal = new aws_iam.ArnPrincipal(`arn:aws:iam::${account}:root`);
-    //   key.grantDecrypt(remotePrincipal);
-    //   mlBucketSecret.grantRead(remotePrincipal);
-    //   mlOutputBucket.grantRead(remotePrincipal);
-    //   buildEncryptionKey.grantDecrypt(remotePrincipal);
-    // }
   }
 }

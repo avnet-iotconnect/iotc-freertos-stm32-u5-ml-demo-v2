@@ -218,6 +218,16 @@ def train(cfg):
     best_model.save(
         os.path.join(HydraConfig.get().runtime.output_dir, cfg.general.saved_models_dir + '/' + "best_model.h5"))
 
+    # !!!!Uncomment this code to be able to retrain existing model
+
+    # s3.upload_file(
+    #     os.path.join(HydraConfig.get().runtime.output_dir, cfg.general.saved_models_dir + '/' + "best_model.h5"), 
+    #     'retrain-model', 
+    #     'best_model.h5'
+    # )
+
+
+
     X_test, y_test = test_ds[0], test_ds[1]
 
     test_preds = best_model.predict(X_test)
