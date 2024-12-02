@@ -198,6 +198,14 @@ export class SagmakerPipeline extends Construct {
       ),
     });
 
+    const defaultStage = new apigatewayv2.CfnStage(this, 'HttpApiDefaultStage', {
+        apiId: httpApi.httpApiId,
+        stageName: '$default',
+        autoDeploy: true,
+    });
+
+    httpApi.defaultStage = defaultStage;
+
     // TBD - finalize url
     this.retrainUrl = httpApi.url.slice(0, -1) + retrainPath;
 
