@@ -178,11 +178,11 @@ export class SagmakerPipeline extends Construct {
       role,
     });
 
-    const logGroup = new logs.LogGroup(this, 'ApiGatewayAccessLogs', {
-      retention: logs.RetentionDays.ONE_DAY,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
-    logGroup.grantWrite(new aws_iam.ServicePrincipal('apigateway.amazonaws.com'));
+    // const logGroup = new logs.LogGroup(this, 'ApiGatewayAccessLogs', {
+    //   retention: logs.RetentionDays.ONE_DAY,
+    //   removalPolicy: RemovalPolicy.DESTROY,
+    // });
+    // logGroup.grantWrite(new aws_iam.ServicePrincipal('apigateway.amazonaws.com'));
     
 
     const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', {
@@ -200,24 +200,24 @@ export class SagmakerPipeline extends Construct {
 
     
 
-    const defaultStage = new apigatewayv2.CfnStage(this, 'HttpApiDefaultStage', {
-      apiId: httpApi.httpApiId,
-      stageName: '$default',
-      accessLogSettings: {
-          destinationArn: logGroup.logGroupArn,
-          format: JSON.stringify({
-              requestId: "$context.requestId",
-              ip: "$context.identity.sourceIp",
-              requestTime: "$context.requestTime",
-              httpMethod: "$context.httpMethod",
-              routeKey: "$context.routeKey",
-              status: "$context.status",
-              protocol: "$context.protocol",
-              responseLength: "$context.responseLength",
-          }),
-      },
-      autoDeploy: true,
-    });
+    // const defaultStage = new apigatewayv2.CfnStage(this, 'HttpApiDefaultStage', {
+    //   apiId: httpApi.httpApiId,
+    //   stageName: '$default',
+    //   accessLogSettings: {
+    //       destinationArn: logGroup.logGroupArn,
+    //       format: JSON.stringify({
+    //           requestId: "$context.requestId",
+    //           ip: "$context.identity.sourceIp",
+    //           requestTime: "$context.requestTime",
+    //           httpMethod: "$context.httpMethod",
+    //           routeKey: "$context.routeKey",
+    //           status: "$context.status",
+    //           protocol: "$context.protocol",
+    //           responseLength: "$context.responseLength",
+    //       }),
+    //   },
+    //   autoDeploy: true,
+    // });
 
     const key = new aws_kms.Key(this, 'KMS', {
       removalPolicy: RemovalPolicy.DESTROY,
