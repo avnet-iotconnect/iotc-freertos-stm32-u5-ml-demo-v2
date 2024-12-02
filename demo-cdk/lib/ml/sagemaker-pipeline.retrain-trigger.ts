@@ -7,11 +7,11 @@ const datasetPath = 'train/datasets/FSD50K/';
 // const apiKey = 'test-api-key';
 
 const codebuild = new CodeBuild();
-const secretsManager = new SecretsManager();
 const ssm = new SSM();
 
 const { projectName, S3_KEY_SECRET_NAME, REGION, datasetsBucket }: any = process.env;
 const s3 = new S3Client({ region: REGION });
+const secretsManager = new SecretsManager();
 
 
 const createWavHeader = (dataLength: number, sampleRate = 16000, numChannels = 1, bitDepth = 16) => {
@@ -41,9 +41,10 @@ const createWavHeader = (dataLength: number, sampleRate = 16000, numChannels = 1
 
 exports.handler = async (event: any) => {
   try {
-    const apiKey = await secretsManager.getSecretValue({
+    const apiKeyValue = await secretsManager.getSecretValue({
         SecretId: S3_KEY_SECRET_NAME
-    }).promise().SecretString
+    }).promise()
+    const apiKey = apiKeyValue.SecretString
     console.log('API Key ' + apiKey);
     if (
         !event.headers['x-api-key'] ||
