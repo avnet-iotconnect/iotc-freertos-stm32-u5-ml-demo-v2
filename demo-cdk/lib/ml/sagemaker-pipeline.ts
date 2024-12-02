@@ -171,7 +171,7 @@ export class SagmakerPipeline extends Construct {
       environment: {
         projectName: build.projectName,
         S3_KEY_SECRET_NAME: s3ApiKeySecret.secretName,
-        datasetsBucket: dataSetsBucket.bucketName
+        datasetsBucket: dataSetsBucket.bucketName,
         REGION: cdk.Stack.of(this).region,
       },
       bundling: {
@@ -188,8 +188,9 @@ export class SagmakerPipeline extends Construct {
       apiName: 'RetrainTriggerApi',
     });
 
+    const retrainPath = '/retrain_trigger';
     httpApi.addRoutes({
-      path: '/retrain_trigger',
+      path: retrainPath,
       methods: [apigatewayv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration(
           'RetrainTriggerIntegration',
@@ -198,7 +199,7 @@ export class SagmakerPipeline extends Construct {
     });
 
     // TBD - finalize url
-    this.retrainUrl = httpApi.url.slice(0, -1);
+    this.retrainUrl = httpApi.url.slice(0, -1) + retrainPath;
 
     const key = new aws_kms.Key(this, 'KMS', {
       removalPolicy: RemovalPolicy.DESTROY,
