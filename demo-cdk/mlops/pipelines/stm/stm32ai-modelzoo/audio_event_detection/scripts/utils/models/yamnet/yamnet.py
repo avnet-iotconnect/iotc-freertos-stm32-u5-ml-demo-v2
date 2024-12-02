@@ -7,14 +7,58 @@
 #  * If no LICENSE file comes with this software, it is provided AS-IS.
 #  *--------------------------------------------------------------------------------------------*/
 
+import boto3
 import tensorflow as tf
 from pathlib import Path
 from ..model_utils import add_head
 from keras import layers
 from keras import regularizers
 
+def check_s3_object_exists(bucket_name, object_key):
+    s3 = boto3.client('s3')
+
+    try:
+        # Attempt to retrieve the object's metadata
+        s3.head_object(Bucket=bucket_name, Key=object_key)
+        print(f"Object {object_key} exists in bucket {bucket_name}.")
+        return True
+    except ClientError as e:
+        # Check the specific error code
+        if e.response['Error']['Code'] == "404":
+            print(f"Object {object_key} does not exist in bucket {bucket_name}.")
+            return False
+        else:
+            # Something else went wrong; log and re-raise
+            print(f"Error checking object: {e}")
+            raise
+
+def download_model_from_s3(bucket_name, object_key, local_path):
+    s3 = boto3.client('s3')
+    try:
+        s3.download_file(bucket_name, object_key, local_path)
+        print(f"Downloaded model from s3://{bucket_name}/{object_key} to {local_path}")
+    except Exception as e:
+        print(f"Error downloading model: {e}")
+        raise
+
 def get_pretrained_model(cfg):
     # Load model
+
+
+    # !!!!Uncomment this code to be able to retrain existing model
+    #
+    # if check_s3_object_exists('retrain-model', 'best_model.h5'):
+    #     local_download_path = Path(Path(__file__).parent.resolve(), 'downloaded_model.h5')
+
+    #     download_model_from_s3('retrain-model', 'best_model.h5', str(local_download_path))
+    #     yamnet_backbone = tf.keras.models.load_model(local_download_path)
+    # else:
+    #     yamnet_backbone = tf.keras.models.load_model(Path(Path(__file__).parent.resolve(),
+    #                      'yamnet_{}_f32.h5'.format(str(cfg.model.model_type.embedding_size))))
+
+    
+
+
     yamnet_backbone = tf.keras.models.load_model(Path(Path(__file__).parent.resolve(),
                          'yamnet_{}_f32.h5'.format(str(cfg.model.model_type.embedding_size))))
     print("Backbone layers")
