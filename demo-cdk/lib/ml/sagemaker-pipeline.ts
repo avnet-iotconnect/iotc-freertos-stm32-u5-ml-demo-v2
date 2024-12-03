@@ -252,7 +252,8 @@ export class SagmakerPipeline extends Construct {
                 build: {
                   commands: [
                     'ls -la',
-                    `aws s3 cp s3://$ML_OUTPUT_BUCKET/train/datasets/FSD50K/ newml --recursive --quiet`,
+                    `aws s3 cp s3://${ML_OUTPUT_BUCKET}/ml/tmp/ml/ newml --recursive --quiet`,
+                    'ls -la newml',
                     'git checkout retrained-model 2>/dev/null || git checkout -b retrained-model',
                     'git add --all',
                     'git commit -m "retrained model"',
