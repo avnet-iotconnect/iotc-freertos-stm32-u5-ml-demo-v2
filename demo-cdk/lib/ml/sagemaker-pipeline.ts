@@ -236,6 +236,9 @@ export class SagmakerPipeline extends Construct {
             owner: gitOwner,
             repo: gitRepo,
         }),
+        environmentVariables: {
+            ML_OUTPUT_BUCKET: { value: mlOutputBucket.bucketName },
+        },
         environment:  {
             computeType: ComputeType.SMALL,
             buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
@@ -249,6 +252,11 @@ export class SagmakerPipeline extends Construct {
                 build: {
                   commands: [
                     'ls -la',
+                    `aws s3 cp s3://$ML_OUTPUT_BUCKET/train/datasets/FSD50K/ newml --recursive --quiet`,
+                    'git checkout retrained-model 2>/dev/null || git checkout -b retrained-model',
+                    'git add --all',
+                    'git commit -m "retrained model"',
+                    'git push -u origin retrained-model'
                   ]
                 }
             },
