@@ -252,7 +252,8 @@ export class SagmakerPipeline extends Construct {
                 build: {
                   commands: [
                     'ls -la',
-                    'aws s3 cp s3://${ML_OUTPUT_BUCKET}/ml/tmp/ml/ newml --recursive --quiet',
+                    'mkdir newml',
+                    'aws s3 cp s3://${ML_OUTPUT_BUCKET}/ml/tmp/ml/ newml --recursive',
                     'ls -la newml',
                     'git checkout retrained-model 2>/dev/null || git checkout -b retrained-model',
                     'git add --all',
@@ -268,6 +269,8 @@ export class SagmakerPipeline extends Construct {
             },
         },
     });
+
+    mlOutputBucket.grantRead(pushCode);
 
     const codeConnectionPolicy = new aws_iam.Policy(this, 'CodeConnectionPolicy', {
         statements: [
