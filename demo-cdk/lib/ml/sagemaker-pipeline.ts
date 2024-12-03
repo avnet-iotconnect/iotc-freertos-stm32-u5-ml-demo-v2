@@ -231,7 +231,7 @@ export class SagmakerPipeline extends Construct {
 
     // Fix hardcoded values
     const pushCode = new aws_codebuild.Project(this, 'FWBuild', {
-        projectName: "AvnetStm32FWBuild",
+        projectName: "PushCode",
         source: aws_codebuild.Source.gitHub({
             owner: gitOwner,
             repo: gitRepo,
