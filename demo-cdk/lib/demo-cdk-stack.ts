@@ -12,7 +12,7 @@ export class DemoCdkStack extends cdk.Stack {
 
     const secretsConstruct = new SecretsConstruct(this, 'SecretsConstruct');
     new FWBuildConstruct(this, 'FWBuildConstruct');
-    new MlConstruct(this, 'MlConstruct');
-    new CredsProviderConstruct(this, 'CredsProviderConstruct', secretsConstruct.s3ApiKeySecret);
+    const mlConstruct = new MlConstruct(this, 'MlConstruct', secretsConstruct.s3ApiKeySecret);
+    new CredsProviderConstruct(this, 'CredsProviderConstruct', secretsConstruct.s3ApiKeySecret, mlConstruct.retrainUrl);
   }
 }

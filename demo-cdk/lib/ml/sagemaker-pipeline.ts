@@ -34,7 +34,8 @@ type SageMakerPipelineProps = {
 };
 
 export class SagmakerPipeline extends Construct {
-  constructor(scope: Construct, id: string, props: SageMakerPipelineProps) {
+  public readonly retrainUrl: string;
+  constructor(scope: Construct, id: string, props: SageMakerPipelineProps, s3ApiKeySecret: aws_secretsmanager.Secret) {
     super(scope, id);
     const { project } = props;
 
@@ -169,6 +170,9 @@ export class SagmakerPipeline extends Construct {
       runtime: aws_lambda.Runtime.NODEJS_18_X,
       environment: {
         projectName: build.projectName,
+        S3_KEY_SECRET_NAME: s3ApiKeySecret.secretName,
+        datasetsBucket: dataSetsBucket.bucketName,
+        REGION: cdk.Stack.of(this).region,
       },
       bundling: {
         esbuildArgs: {
@@ -178,19 +182,15 @@ export class SagmakerPipeline extends Construct {
       role,
     });
 
-    // const logGroup = new logs.LogGroup(this, 'ApiGatewayAccessLogs', {
-    //   retention: logs.RetentionDays.ONE_DAY,
-    //   removalPolicy: RemovalPolicy.DESTROY,
-    // });
-    // logGroup.grantWrite(new aws_iam.ServicePrincipal('apigateway.amazonaws.com'));
-    
+    s3ApiKeySecret.grantRead(role);
 
     const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', {
       apiName: 'RetrainTriggerApi',
     });
 
+    const retrainPath = '/retrain_trigger';
     httpApi.addRoutes({
-      path: '/retrain_trigger',
+      path: retrainPath,
       methods: [apigatewayv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration(
           'RetrainTriggerIntegration',
@@ -198,26 +198,8 @@ export class SagmakerPipeline extends Construct {
       ),
     });
 
-    
-
-    // const defaultStage = new apigatewayv2.CfnStage(this, 'HttpApiDefaultStage', {
-    //   apiId: httpApi.httpApiId,
-    //   stageName: '$default',
-    //   accessLogSettings: {
-    //       destinationArn: logGroup.logGroupArn,
-    //       format: JSON.stringify({
-    //           requestId: "$context.requestId",
-    //           ip: "$context.identity.sourceIp",
-    //           requestTime: "$context.requestTime",
-    //           httpMethod: "$context.httpMethod",
-    //           routeKey: "$context.routeKey",
-    //           status: "$context.status",
-    //           protocol: "$context.protocol",
-    //           responseLength: "$context.responseLength",
-    //       }),
-    //   },
-    //   autoDeploy: true,
-    // });
+    // TBD - finalize url
+    this.retrainUrl = Token.asString(httpApi.url).slice(0, -1) + retrainPath;
 
     const key = new aws_kms.Key(this, 'KMS', {
       removalPolicy: RemovalPolicy.DESTROY,

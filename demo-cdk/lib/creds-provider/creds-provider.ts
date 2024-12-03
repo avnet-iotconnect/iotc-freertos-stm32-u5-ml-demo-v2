@@ -13,7 +13,7 @@ import { CredsProviderResourcesLambdaConstruct } from './creds-provider-resource
 import { Construct } from 'constructs';
 
 export class CredsProviderConstruct extends Construct {
-    constructor(scope: Construct, id: string, s3ApiKeySecret: aws_secretsmanager.Secret) {
+    constructor(scope: Construct, id: string, s3ApiKeySecret: aws_secretsmanager.Secret, retrainUrl: string) {
         super(scope, id);
 
         const iotConnectUsername = this.node.tryGetContext('iotConnectUsername');
@@ -124,7 +124,7 @@ export class CredsProviderConstruct extends Construct {
                 IOTCONNECT_PASSWORD: iotConnectPassword,
                 IOTCONNECT_SOLUTION_KEY: iotConnectSolutionKey,
                 IOTCONNECT_ENTITY: iotConnectEntity,
-                S3_ENDPOINT: "https://www.google.com/",
+                S3_ENDPOINT: retrainUrl,
                 S3_KEY_SECRET_NAME: s3ApiKeySecret.secretName,
                 REGION: cdk.Stack.of(this).region
             },
