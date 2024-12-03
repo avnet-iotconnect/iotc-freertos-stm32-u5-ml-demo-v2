@@ -271,6 +271,9 @@ export class SagmakerPipeline extends Construct {
     });
 
     mlOutputBucket.grantRead(pushCode);
+    pushCode.role?.addToPrincipalPolicy(
+        new aws_iam.PolicyStatement({ actions: ['kms:Decrypt'], resources: ['*'] })
+    );
 
     const codeConnectionPolicy = new aws_iam.Policy(this, 'CodeConnectionPolicy', {
         statements: [
