@@ -137,10 +137,6 @@ export class SagmakerPipeline extends Construct {
       aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSageMakerFullAccess')
     );
 
-    const param = new aws_ssm.StringParameter(this, 'StringParameter', {
-      stringValue: '0',
-    });
-
     const retrainTriggerRole = new aws_iam.Role(this, 'RetrainTriggerRole', {
       assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
@@ -163,7 +159,7 @@ export class SagmakerPipeline extends Construct {
           '--packages': 'bundle',
         },
       },
-      retrainTriggerRole,
+      role: retrainTriggerRole,
     });
 
     s3ApiKeySecret.grantRead(retrainTriggerRole);
@@ -216,7 +212,7 @@ export class SagmakerPipeline extends Construct {
             '--packages': 'bundle',
           },
         },
-        pushModelRole,
+        role: pushModelRole,
     });
 
     build.onBuildSucceeded('BuildSucceed', {
