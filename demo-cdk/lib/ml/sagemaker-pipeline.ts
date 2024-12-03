@@ -240,18 +240,24 @@ export class SagmakerPipeline extends Construct {
             computeType: ComputeType.SMALL,
             buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
         },
+        buildSpec: aws_codebuild.BuildSpec.fromObject({
+            version: '0.2',
+            artifacts: {
+              files: ['Projects/b_u585i_iot02a_ntz/Debug/b_u585i_iot02a_ntz.bin'],
+            },
+            phases: {
+                build: {
+                  commands: [
+                    'ls -la',
+                  ]
+                }
+            },
+        }),
         logging: {
             cloudWatch: {
             logGroup: new aws_logs.LogGroup(this, `PushCodeLogGroup`),
             },
         },
-        phases: {
-            build: {
-              commands: [
-                'ls -la',
-              ]
-            }
-          },
     });
 
     const codeConnectionPolicy = new aws_iam.Policy(this, 'CodeConnectionPolicy', {
