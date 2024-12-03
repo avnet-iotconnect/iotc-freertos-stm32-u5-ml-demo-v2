@@ -140,6 +140,7 @@ export class SagmakerPipeline extends Construct {
     const retrainTriggerRole = new aws_iam.Role(this, 'RetrainTriggerRole', {
       assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
+        aws_iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMFullAccess'),
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeBuildAdminAccess'),
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
@@ -193,6 +194,7 @@ export class SagmakerPipeline extends Construct {
     const pushModelRole = new aws_iam.Role(this, 'PushModelRole', {
         assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
         managedPolicies: [
+          aws_iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
           aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
         ],
     });
@@ -224,5 +226,44 @@ export class SagmakerPipeline extends Construct {
       invocationType: triggers.InvocationType.EVENT,
       executeAfter: [build],
     });
+
+    const gitArn = this.node.tryGetContext('gitArn');
+
+    // Fix hardcoded values
+    const pushCode = new aws_codebuild.Project(this, 'FWBuild', {
+        projectName: "AvnetStm32FWBuild",
+        source: aws_codebuild.Source.gitHub({
+            owner: gitOwner,
+            repo: gitRepo,
+        }),
+        environment:  {
+            computeType: ComputeType.SMALL,
+            buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
+        },
+        logging: {
+            cloudWatch: {
+            logGroup: new aws_logs.LogGroup(this, `PushCodeLogGroup`),
+            },
+        },
+        phases: {
+            build: {
+              commands: [
+                'ls -la',
+              ]
+            }
+          },
+    });
+
+    const codeConnectionPolicy = new aws_iam.Policy(this, 'CodeConnectionPolicy', {
+        statements: [
+            new aws_iam.PolicyStatement({
+            actions: ['codeconnections:GetConnectionToken', 'codeconnections:GetConnection'],
+            resources: [gitArn],
+            }),
+        ],
+    });
+    pushCode.role!.attachInlinePolicy(codeConnectionPolicy);
+    // create the policy before the project
+    (pushCode.node.defaultChild as cdk.CfnResource).addDependency(codeConnectionPolicy.node.defaultChild as cdk.CfnResource);
   }
 }
