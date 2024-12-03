@@ -141,29 +141,13 @@ export class SagmakerPipeline extends Construct {
       stringValue: '0',
     });
 
-    const role = new aws_iam.Role(this, 'FnRole', {
+    const retrainTriggerRole = new aws_iam.Role(this, 'RetrainTriggerRole', {
       assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMFullAccess'),
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeBuildAdminAccess'),
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
       ],
-    });
-
-    const fn = new aws_lambda_nodejs.NodejsFunction(this, 'wait-handler', {
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
-      environment: {
-        assetHash: mlOpsCode.assetHash,
-        paramName: param.parameterName,
-        projectName: build.projectName,
-        runEveryTime: Date.now().toString(),
-      },
-      bundling: {
-        esbuildArgs: {
-          '--packages': 'bundle',
-        },
-      },
-      role,
     });
 
     const retrainTriggerFn = new aws_lambda_nodejs.NodejsFunction(this, 'retrain-trigger', {
@@ -179,10 +163,10 @@ export class SagmakerPipeline extends Construct {
           '--packages': 'bundle',
         },
       },
-      role,
+      retrainTriggerRole,
     });
 
-    s3ApiKeySecret.grantRead(role);
+    s3ApiKeySecret.grantRead(retrainTriggerRole);
 
     const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', {
       apiName: 'RetrainTriggerApi',
@@ -198,17 +182,51 @@ export class SagmakerPipeline extends Construct {
       ),
     });
 
-    // TBD - finalize url
     this.retrainUrl = Token.asString(httpApi.url).slice(0, -1) + retrainPath;
 
-    const key = new aws_kms.Key(this, 'KMS', {
-      removalPolicy: RemovalPolicy.DESTROY,
-      enableKeyRotation: true,
+    // const key = new aws_kms.Key(this, 'KMS', {
+    //   removalPolicy: RemovalPolicy.DESTROY,
+    //   enableKeyRotation: true,
+    // });
+    // const mlBucketSecret = new aws_secretsmanager.Secret(this, 'MlOutputSecret', {
+    //   secretName: 'MlBucketArn',
+    //   secretStringValue: SecretValue.unsafePlainText(mlOutputBucket.bucketArn),
+    //   encryptionKey: key,
+    // });
+
+    const pushModelRole = new aws_iam.Role(this, 'PushModelRole', {
+        assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
+        managedPolicies: [
+          aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
+        ],
     });
-    const mlBucketSecret = new aws_secretsmanager.Secret(this, 'MlOutputSecret', {
-      secretName: 'MlBucketArn',
-      secretStringValue: SecretValue.unsafePlainText(mlOutputBucket.bucketArn),
-      encryptionKey: key,
+
+    const gitOwner = this.node.tryGetContext('gitOwner');
+    const gitRepo = this.node.tryGetContext('gitRepo');
+
+    // Lambda to push ml to the github repo
+    const pushModelFn = new aws_lambda_nodejs.NodejsFunction(this, 'push-model', {
+        runtime: aws_lambda.Runtime.NODEJS_18_X,
+        environment: {
+          GIT_OWNER: gitOwner,
+          GIT_REPO: gitRepo,
+        },
+        bundling: {
+          esbuildArgs: {
+            '--packages': 'bundle',
+          },
+        },
+        pushModelRole,
+    });
+
+    build.onBuildSucceeded('BuildSucceed', {
+      target: new aws_events_targets.LambdaFunction(pushModelFn),
+    });
+
+    new triggers.Trigger(this, 'BuildTrigger', {
+      handler: pushModelFn,
+      invocationType: triggers.InvocationType.EVENT,
+      executeAfter: [build],
     });
   }
 }
