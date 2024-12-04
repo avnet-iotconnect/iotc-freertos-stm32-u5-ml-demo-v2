@@ -211,7 +211,8 @@ void vRetrainProcessingTask(void* pvParameters) {
                 headers,
                 sizeof(headers) / sizeof(headers[0])
             );
-            printf("Large file upload result: %d\n", result);
+
+            LogDebug("S3Client_Post completed with result: %d", result); // Updated log message
 
             int disconnect_result = S3Client_Disconnect();
             if (disconnect_result != S3_CLIENT_SUCCESS) {
