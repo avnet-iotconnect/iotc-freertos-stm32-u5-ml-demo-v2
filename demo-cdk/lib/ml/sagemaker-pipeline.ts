@@ -241,8 +241,7 @@ export class SagmakerPipeline extends Construct {
         },
         environment:  {
             computeType: ComputeType.SMALL,
-            buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0б
-
+            buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
         },
         buildSpec: aws_codebuild.BuildSpec.fromObject({
             version: 0.2,
