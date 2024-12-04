@@ -1,3 +1,11 @@
+/**
+ * @file retrain_handler.c
+ * @brief Retrain Handler Implementation
+ *
+ * This module provides functions to initialize, enqueue messages, and process
+ * retrain data messages.
+ */
+
 #include "logging_levels.h"
 
 /* Define LOG_LEVEL here if you want to modify the logging level from the default */
@@ -5,37 +13,55 @@
 #include "logging.h"
 
 #include "retrain_handler.h"
-
 #include "app/s3_client/s3_https_client.h"
 
+/* ============================ Constants and Macros ============================ */
+
+/* Maximum size of the message queue */
 #define MAX_QUEUE_SIZE 10
+
+/* Timeout for sending messages to the queue (in milliseconds) */
 #define QUEUE_SEND_TIMEOUT_MS 500
 
-// Internal context structure
+/* ============================ Static Variables ============================ */
+
+/* Internal context structure */
 struct RetrainHandlerContext {
-    QueueHandle_t retrain_queue;        // FreeRTOS queue handle
-    TaskHandle_t processing_task;       // Task handling message processing
-    uint32_t total_messages_processed;  // Performance tracking
-    bool is_initialized;                // Initialization state
+    QueueHandle_t retrain_queue;        /**< FreeRTOS queue handle */
+    TaskHandle_t processing_task;       /**< Task handling message processing */
+    uint32_t total_messages_processed;  /**< Performance tracking */
+    bool is_initialized;                /**< Initialization state */
 };
 
-// Static allocation for low-overhead scenarios
+/* Static allocation for low-overhead scenarios */
 static struct RetrainHandlerContext s_default_context = {0};
 
-// Forward declarations of internal functions
+/* ============================ Static Function Declarations ============================ */
+
+/**
+ * @brief Validate the retrain data message.
+ *
+ * This function validates the retrain data message to ensure it meets the
+ * required criteria.
+ *
+ * @param[in] message Pointer to the retrain data message to validate.
+ *
+ * @return RetrainHandlerStatus_t
+ * - RETRAIN_HANDLER_OK if the message is valid.
+ * - RETRAIN_HANDLER_ERR_INVALID_BUFFER if the message buffer is invalid.
+ * - RETRAIN_HANDLER_ERR_BUFFER_OVERFLOW if the message buffer size exceeds the maximum allowed size.
+ */
 static RetrainHandlerStatus_t prvValidateMessageData(const RetrainData_t* message);
+
+/* ============================ Function Implementations ============================ */
 
 RetrainHandlerStatus_t RetrainHandler_init(void) {
     RetrainHandlerHandle_t handler = &s_default_context;
 
-    // Create message queue
-    handler->retrain_queue = xQueueCreate(
-        MAX_QUEUE_SIZE, 
-        sizeof(RetrainData_t)
-    );
+    /* Create message queue */
+    handler->retrain_queue = xQueueCreate(MAX_QUEUE_SIZE, sizeof(RetrainData_t));
 
     if (handler->retrain_queue == NULL) {
-        
         LogError("Failed to create retrain_queue");
         return RETRAIN_HANDLER_ERR_QUEUE_CREATION;
     }
@@ -45,27 +71,22 @@ RetrainHandlerStatus_t RetrainHandler_init(void) {
     return RETRAIN_HANDLER_OK;
 }
 
-RetrainHandlerStatus_t RetrainData_enqueue(const RetrainData_t* message)
-{
+RetrainHandlerStatus_t RetrainData_enqueue(const RetrainData_t* message) {
     RetrainHandlerHandle_t handler = &s_default_context;
 
-    // Validate message
+    /* Validate message */
     if (message == NULL) {
         return RETRAIN_HANDLER_ERR_INVALID_MESSAGE;
     }
 
-    // Validate message data
-   RetrainHandlerStatus_t validation_status = prvValidateMessageData(message);
-   if (validation_status != RETRAIN_HANDLER_OK) {
-       return validation_status;
-   }
+    /* Validate message data */
+    RetrainHandlerStatus_t validation_status = prvValidateMessageData(message);
+    if (validation_status != RETRAIN_HANDLER_OK) {
+        return validation_status;
+    }
 
-    // Attempt to send message to queue
-    BaseType_t queue_status = xQueueSend(
-        handler->retrain_queue, 
-        message, 
-        pdMS_TO_TICKS(QUEUE_SEND_TIMEOUT_MS)
-    );
+    /* Attempt to send message to queue */
+    BaseType_t queue_status = xQueueSend(handler->retrain_queue, message, pdMS_TO_TICKS(QUEUE_SEND_TIMEOUT_MS));
 
     if (queue_status == pdPASS) {
         LogDebug("Message enqueued successfully");
@@ -77,27 +98,23 @@ RetrainHandlerStatus_t RetrainData_enqueue(const RetrainData_t* message)
 }
 
 void vRetrainProcessingTask(void* pvParameters) {
-    (void)pvParameters; // Cast to void to avoid unused parameter warning
+    (void)pvParameters; /* Cast to void to avoid unused parameter warning */
 
     RetrainHandlerHandle_t handler = &s_default_context;
     RetrainData_t received_message;
 
-    if(handler->is_initialized == false) {
+    if (handler->is_initialized == false) {
         LogError("Context is not initialized");
         vTaskDelete(NULL);
     }
 
     for (;;) {
-        // Wait for message with timeout
-        BaseType_t receive_status = xQueueReceive(
-            handler->retrain_queue,
-            &received_message,
-			portMAX_DELAY
-        );
+        /* Wait for message with timeout */
+        BaseType_t receive_status = xQueueReceive(handler->retrain_queue, &received_message, portMAX_DELAY);
 
         if (receive_status == pdTRUE) {
             LogDebug("Retrain data received.\n\rData size: %d", received_message.buffer_size);
-            
+
             int init_result = S3Client_Init();
             if (init_result != S3_CLIENT_SUCCESS) {
                 LogError("Failed to initialize S3 client, error code: %d", init_result);
@@ -113,7 +130,7 @@ void vRetrainProcessingTask(void* pvParameters) {
             HTTPCustomHeader_t headers[] = {
                 {"Content-Type", "audio/wav"},
                 {"x-api-key", "DkIxv0zK8T7qHHajtc5y58182rBycj6V7OTMzsEe"},
-                {"sound-classes","Alarm"}
+                {"sound-classes", "Alarm"}
             };
 
             int result = S3Client_Post(
@@ -125,8 +142,7 @@ void vRetrainProcessingTask(void* pvParameters) {
             printf("Large file upload result: %d\n", result);
 
             int disconnect_result = S3Client_Disconnect();
-            if (disconnect_result != S3_CLIENT_SUCCESS)
-            {
+            if (disconnect_result != S3_CLIENT_SUCCESS) {
                 LogError("Failed to disconnect from AWS S3. Error code: %d", disconnect_result);
             }
         }
@@ -134,7 +150,6 @@ void vRetrainProcessingTask(void* pvParameters) {
 }
 
 static RetrainHandlerStatus_t prvValidateMessageData(const RetrainData_t* message) {
-    
     if (message->buffer == NULL) {
         LogError("Invalid message buffer: NULL");
         return RETRAIN_HANDLER_ERR_INVALID_BUFFER;
