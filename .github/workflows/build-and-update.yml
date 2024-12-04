@@ -1,10 +1,9 @@
 name: Build Firmware and create OTA Update
 
-# TBD change trigger from manual to push or other suitable
 on: 
   push:
     branches: 
-      - "main"
+      - "retrained-model"
 
 jobs:
   fw_build:
