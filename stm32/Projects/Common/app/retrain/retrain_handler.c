@@ -200,7 +200,7 @@ void vRetrainProcessingTask(void* pvParameters) {
             }
 
             HTTPCustomHeader_t headers[] = {
-                {"Content-Type", "audio/wav"},
+                {"Content-Type", CONTENT_TYPE_AUDIO},
                 {"x-api-key", "DkIxv0zK8T7qHHajtc5y58182rBycj6V7OTMzsEe"},
                 {"sound-classes", "Alarm"}
             };
