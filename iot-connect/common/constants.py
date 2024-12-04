@@ -16,6 +16,7 @@ DEVICE_TEMPLATE_LIST = "device-template"
 DEVICE_CREATE = "Device"
 ENTITY_LIST = "Entity"
 FW_ADD = "Firmware"
+FW_UPGRADE = "firmware-upgrade"
 FILE_UPLOAD = "File"
 FIRMWARE_UPGRADE = "firmware-upgrade/"
 FIRMWARE_UPGRADE_PUBLISH = "/publish"
@@ -35,6 +36,7 @@ DEVICE_TEMPLATES = [DEVICE_SOUND_CLASS, DEVICE_SOUND_GEN]
 
 DEVICE_TEMPLATE_ALREADY_EXISTS = "DeviceTemplateNameAlreadyExists"
 DEVICE_ALREADY_EXISTS = "UniqueIdAlreadyExists"
+FIRMWARE_ALREADY_EXISTS = "TemplateAlreadyAttachedWithFirmware"
 
 FW_OTA_FILE = "ota/fw.iso"
 FW_PREFIX = "SC"
