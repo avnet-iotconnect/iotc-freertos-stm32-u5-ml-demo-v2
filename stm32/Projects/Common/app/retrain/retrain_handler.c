@@ -27,6 +27,9 @@
 /* Maximum size of the audio buffer (64 KB) */
 #define AUDIO_BUFFER_SIZE (64 * 1024)
 
+/* Content type for audio data */
+#define CONTENT_TYPE_AUDIO "audio/wav"
+
 /* ============================ Static Variables ============================ */
 
 /* Internal context structure */
