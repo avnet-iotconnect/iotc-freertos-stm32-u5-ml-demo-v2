@@ -202,7 +202,7 @@ void vRetrainProcessingTask(void* pvParameters) {
             HTTPCustomHeader_t headers[] = {
                 {"Content-Type", CONTENT_TYPE_AUDIO},
                 {"x-api-key", "DkIxv0zK8T7qHHajtc5y58182rBycj6V7OTMzsEe"},
-                {"sound-classes", "Alarm"}
+                {"sound-classes", received_message.classification} // Use received classification
             };
 
             int result = S3Client_Post(
