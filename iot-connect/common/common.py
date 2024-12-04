@@ -10,7 +10,9 @@ from .constants import (
     DEVICE_CREATE,
     RULE,
     COMMAND,
-    CREDS_S3_COMMAND
+    CREDS_S3_COMMAND,
+    API_FW_URL,
+    FW_ADD
 )
 from .check_status import check_status
 
@@ -105,3 +107,23 @@ def get_command_guid(template_guid: str, access_token: str) -> str:
     print("Command not found")
 
     return command_guid
+
+def get_firmware_guid(template_name: str, access_token: str) -> str:
+    """Returns firmware guid from the IoTConnect"""
+    headers = {
+        "Authorization": access_token
+    }
+    params = {
+        "TemplateName": template_name
+    }
+    response = requests.get(API_FW_URL + FW_ADD, headers = headers, params = params)
+    check_status(response)
+    response_json = response.json()
+    print(response_json)
+
+    fw_guid = ""
+
+    if (len(response_json["data"]) > 0):
+        fw_guid = response_json["data"][0]["guid"]
+
+    return fw_guid
