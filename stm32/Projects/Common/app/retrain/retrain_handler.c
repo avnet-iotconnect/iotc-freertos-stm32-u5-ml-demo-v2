@@ -41,6 +41,9 @@ struct RetrainHandlerContext {
 /* Static allocation for low-overhead scenarios */
 static struct RetrainHandlerContext s_default_context = {0};
 
+/* Static array for class names */
+static const char* class_list[] = CTRL_X_CUBE_AI_MODE_CLASS_LIST;
+
 /* ============================ Static Function Declarations ============================ */
 
 /**
@@ -230,4 +233,20 @@ static RetrainHandlerStatus_t prvValidateMessageData(const RetrainData_t* messag
     }
 
     return RETRAIN_HANDLER_OK;
+}
+
+/**
+ * @brief Get the class name corresponding to the provided index.
+ *
+ * @param[in] index The class index (1 to 6).
+ *
+ * @return const char* Pointer to the class name string, or NULL if the index is out of range.
+ */
+const char* RetrainHandler_GetClassName(uint8_t index) {
+    if (index < 1 || index > CTRL_X_CUBE_AI_MODE_CLASS_NUMBER) {
+        LogError("Invalid class index: %d", index);
+        return NULL;
+    }
+
+    return class_list[index - 1];
 }
