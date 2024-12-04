@@ -252,9 +252,9 @@ export class SagmakerPipeline extends Construct {
                     'git config --global user.name "codebuild-ml"',
                     'git config --global user.email "codebuild-ml"',
                     'ls -la',
+                    'git checkout retrained-model || git checkout -b retrained-model',
                     'rm -r /models/ml-source-ablrv/*',
                     'aws s3 cp s3://${ML_OUTPUT_BUCKET}/ml/tmp/ml/ /models/ml-source-ablrv --recursive --quiet',
-                    'git checkout retrained-model 2>/dev/null || git checkout -b retrained-model',
                     'git add --all',
                     'git commit -m "retrained model"',
                     'git push -u origin retrained-model'
