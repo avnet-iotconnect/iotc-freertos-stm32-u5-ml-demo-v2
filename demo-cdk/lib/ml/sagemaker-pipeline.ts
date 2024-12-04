@@ -161,6 +161,7 @@ export class SagmakerPipeline extends Construct {
         },
       },
       role: retrainTriggerRole,
+      timeout: cdk.Duration.seconds(10),
     });
 
     s3ApiKeySecret.grantRead(retrainTriggerRole);
