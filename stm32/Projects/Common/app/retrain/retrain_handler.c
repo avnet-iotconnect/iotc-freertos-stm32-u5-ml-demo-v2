@@ -14,6 +14,7 @@
 
 #include "retrain_handler.h"
 #include "app/s3_client/s3_https_client.h"
+#include "ai_model_config.h"
 
 /* ============================ Constants and Macros ============================ */
 
@@ -23,6 +24,9 @@
 /* Timeout for sending messages to the queue (in milliseconds) */
 #define QUEUE_SEND_TIMEOUT_MS 500
 
+/* Maximum size of the audio buffer (64 KB) */
+#define AUDIO_BUFFER_SIZE (64 * 1024)
+
 /* ============================ Static Variables ============================ */
 
 /* Internal context structure */
@@ -31,6 +35,7 @@ struct RetrainHandlerContext {
     TaskHandle_t processing_task;       /**< Task handling message processing */
     uint32_t total_messages_processed;  /**< Performance tracking */
     bool is_initialized;                /**< Initialization state */
+    uint8_t audio_buffer[AUDIO_BUFFER_SIZE]; /**< Static buffer for audio data transfer */
 };
 
 /* Static allocation for low-overhead scenarios */
@@ -95,6 +100,70 @@ RetrainHandlerStatus_t RetrainData_enqueue(const RetrainData_t* message) {
         LogError("Failed to enqueue message, queue might be full");
         return RETRAIN_HANDLER_ERR_QUEUE_FULL;
     }
+}
+
+RetrainHandlerStatus_t RetrainHandler_SetBufferData(const uint8_t* data, size_t size) {
+    RetrainHandlerHandle_t handler = &s_default_context;
+
+    /* Check if handler is initialized */
+    if (!handler->is_initialized) {
+        LogError("Handler is not initialized");
+        return RETRAIN_HANDLER_ERR_INVALID_BUFFER;
+    }
+
+    /* Validate input data */
+    if (data == NULL) {
+        LogError("Invalid input data: NULL");
+        return RETRAIN_HANDLER_ERR_INVALID_BUFFER;
+    }
+
+    /* Validate buffer size */
+    if (size > AUDIO_BUFFER_SIZE) {
+        LogError("Input data size exceeds audio buffer size: %d", size);
+        return RETRAIN_HANDLER_ERR_BUFFER_OVERFLOW;
+    }
+
+    /* Copy data to the audio buffer */
+    memcpy(handler->audio_buffer, data, size);
+    LogDebug("Audio buffer set successfully");
+
+    return RETRAIN_HANDLER_OK;
+}
+
+RetrainHandlerStatus_t RetrainHandler_EnqueueBufferData(const char* classification) {
+    RetrainHandlerHandle_t handler = &s_default_context;
+
+    /* Check if handler is initialized */
+    if (!handler->is_initialized) {
+        LogError("Handler is not initialized");
+        return RETRAIN_HANDLER_ERR_INVALID_BUFFER;
+    }
+
+    /* Validate classification string */
+    if (classification == NULL) {
+        LogError("Invalid classification string: NULL");
+        return RETRAIN_HANDLER_ERR_INVALID_MESSAGE;
+    }
+
+    if (strlen(classification) >= RETRAIN_MAX_CLASSIFICATION_LEN) {
+        LogError("Classification string exceeds maximum length: %d", strlen(classification));
+        return RETRAIN_HANDLER_ERR_INVALID_MESSAGE;
+    }
+
+    LogDebug("Enqueuing buffer data with classification: %s", classification);
+
+    /* Prepare the message */
+    RetrainData_t message;
+    message.buffer = handler->audio_buffer;
+    message.buffer_size = AUDIO_BUFFER_SIZE;
+    strncpy(message.classification, classification, RETRAIN_MAX_CLASSIFICATION_LEN);
+
+    LogDebug("Message prepared with buffer size: %d", message.buffer_size);
+
+    /* Enqueue the message */
+    RetrainHandlerStatus_t enqueue_status = RetrainData_enqueue(&message);
+
+    return enqueue_status;
 }
 
 void vRetrainProcessingTask(void* pvParameters) {
