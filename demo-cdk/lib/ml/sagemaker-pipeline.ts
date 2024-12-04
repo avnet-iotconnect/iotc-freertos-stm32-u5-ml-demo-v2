@@ -241,20 +241,20 @@ export class SagmakerPipeline extends Construct {
         },
         environment:  {
             computeType: ComputeType.SMALL,
-            buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
+            buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0б
+
         },
         buildSpec: aws_codebuild.BuildSpec.fromObject({
-            version: '0.2',
-            artifacts: {
-              files: ['Projects/b_u585i_iot02a_ntz/Debug/b_u585i_iot02a_ntz.bin'],
-            },
+            version: 0.2,
+            env: {"git-credential-helper": "yes"},
             phases: {
                 build: {
                   commands: [
+                    'git config --global user.name "codebuild-ml"',
+                    'git config --global user.email "codebuild-ml"',
                     'ls -la',
-                    'mkdir newml',
-                    'aws s3 cp s3://${ML_OUTPUT_BUCKET}/ml/tmp/ml/ newml --recursive',
-                    'ls -la newml',
+                    'rm -r /models/ml-source-ablrv/*',
+                    'aws s3 cp s3://${ML_OUTPUT_BUCKET}/ml/tmp/ml/ /models/ml-source-ablrv --recursive --quiet',
                     'git checkout retrained-model 2>/dev/null || git checkout -b retrained-model',
                     'git add --all',
                     'git commit -m "retrained model"',
