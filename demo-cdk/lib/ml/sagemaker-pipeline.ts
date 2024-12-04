@@ -201,32 +201,6 @@ export class SagmakerPipeline extends Construct {
 
     const gitOwner = this.node.tryGetContext('gitOwner');
     const gitRepo = this.node.tryGetContext('gitRepo');
-
-    // Lambda to push ml to the github repo
-    const pushModelFn = new aws_lambda_nodejs.NodejsFunction(this, 'push-model', {
-        runtime: aws_lambda.Runtime.NODEJS_18_X,
-        environment: {
-          GIT_OWNER: gitOwner,
-          GIT_REPO: gitRepo,
-        },
-        bundling: {
-          esbuildArgs: {
-            '--packages': 'bundle',
-          },
-        },
-        role: pushModelRole,
-    });
-
-    build.onBuildSucceeded('BuildSucceed', {
-      target: new aws_events_targets.LambdaFunction(pushModelFn),
-    });
-
-    new triggers.Trigger(this, 'BuildTrigger', {
-      handler: pushModelFn,
-      invocationType: triggers.InvocationType.EVENT,
-      executeAfter: [build],
-    });
-
     const gitArn = this.node.tryGetContext('gitArn');
 
     // Fix hardcoded values
@@ -243,6 +217,7 @@ export class SagmakerPipeline extends Construct {
             computeType: ComputeType.SMALL,
             buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
         },
+        timeout: Duration.minutes(5),
         buildSpec: aws_codebuild.BuildSpec.fromObject({
             version: 0.2,
             env: {"git-credential-helper": "yes"},
@@ -264,9 +239,13 @@ export class SagmakerPipeline extends Construct {
         }),
         logging: {
             cloudWatch: {
-            logGroup: new aws_logs.LogGroup(this, `PushCodeLogGroup`),
+                logGroup: new aws_logs.LogGroup(this, `PushCodeLogGroup`),
             },
         },
+    });
+
+    build.onBuildSucceeded('BuildSucceed', {
+        target: new aws_events_targets.CodeBuildProject(pushCode),
     });
 
     mlOutputBucket.grantRead(pushCode);
