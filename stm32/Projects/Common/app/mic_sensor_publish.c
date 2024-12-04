@@ -62,6 +62,8 @@
 /* AI includes */
 #include "ai_dpu.h"
 
+#include "app/retrain/retrain_handler.h"
+
 extern UBaseType_t uxRand(void);
 
 #define MQTT_PUBLISH_MAX_LEN (512)
@@ -112,8 +114,8 @@ static TaskHandle_t xMicTask;
 static TickType_t last_detection_time;
 static int confidence_threshold = 42;
 static int inactivity_timeout = 5000;
+static int retrain_cmd_arg = 0;
 static int confidence_offsets[AI_NETWORK_OUT_1_SIZE] = {0, -49, -19, 39, 27, -25};
-
 /*-----------------------------------------------------------*/
 static void prvPublishCommandCallback(MQTTAgentCommandContext_t *pxCommandContext,
 									  MQTTAgentReturnInfo_t *pxReturnInfo)
@@ -310,6 +312,7 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
     const char* OFFSETS_CMD = "set-confidence-offsets ";
     const char* THRESHOLD_CMD = "set-confidence-threshold ";
     const char* INACTIVITY_TIMEOUT_CMD = "set-inactivity-timeout ";
+	const char* RETRAIN_CMD = "retrain";
     if (!publish_info) {
         LogError("on_c2d_message: Publish info is NULL?");
         return;
@@ -342,6 +345,16 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
     	} else {
     		LogError("Failed %s!", INACTIVITY_TIMEOUT_CMD);
     	}
+	} else if (NULL != strstr(payload, RETRAIN_CMD)) {
+		if (scan_command_number_arg(payload, RETRAIN_CMD, &retrain_cmd_arg)) {
+			LogInfo("Retrain command received: %d", retrain_cmd_arg);
+			RetrainData_t message;
+			message.buffer = (void*)pucAudioBuff;
+			message.buffer_size = AUDIO_BUFF_SIZE;
+			RetrainData_enqueue(&message);
+		} else {
+			LogError("Failed %s!", RETRAIN_CMD);
+		}
     } else {
     	LogError("Unknown command!");
     }
