@@ -137,33 +137,14 @@ export class SagmakerPipeline extends Construct {
       aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSageMakerFullAccess')
     );
 
-    const param = new aws_ssm.StringParameter(this, 'StringParameter', {
-      stringValue: '0',
-    });
-
-    const role = new aws_iam.Role(this, 'FnRole', {
+    const retrainTriggerRole = new aws_iam.Role(this, 'RetrainTriggerRole', {
       assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
+        aws_iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMFullAccess'),
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeBuildAdminAccess'),
         aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
       ],
-    });
-
-    const fn = new aws_lambda_nodejs.NodejsFunction(this, 'wait-handler', {
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
-      environment: {
-        assetHash: mlOpsCode.assetHash,
-        paramName: param.parameterName,
-        projectName: build.projectName,
-        runEveryTime: Date.now().toString(),
-      },
-      bundling: {
-        esbuildArgs: {
-          '--packages': 'bundle',
-        },
-      },
-      role,
     });
 
     const retrainTriggerFn = new aws_lambda_nodejs.NodejsFunction(this, 'retrain-trigger', {
@@ -179,10 +160,10 @@ export class SagmakerPipeline extends Construct {
           '--packages': 'bundle',
         },
       },
-      role,
+      role: retrainTriggerRole,
     });
 
-    s3ApiKeySecret.grantRead(role);
+    s3ApiKeySecret.grantRead(retrainTriggerRole);
 
     const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', {
       apiName: 'RetrainTriggerApi',
@@ -198,17 +179,90 @@ export class SagmakerPipeline extends Construct {
       ),
     });
 
-    // TBD - finalize url
     this.retrainUrl = Token.asString(httpApi.url).slice(0, -1) + retrainPath;
 
-    const key = new aws_kms.Key(this, 'KMS', {
-      removalPolicy: RemovalPolicy.DESTROY,
-      enableKeyRotation: true,
+    // const key = new aws_kms.Key(this, 'KMS', {
+    //   removalPolicy: RemovalPolicy.DESTROY,
+    //   enableKeyRotation: true,
+    // });
+    // const mlBucketSecret = new aws_secretsmanager.Secret(this, 'MlOutputSecret', {
+    //   secretName: 'MlBucketArn',
+    //   secretStringValue: SecretValue.unsafePlainText(mlOutputBucket.bucketArn),
+    //   encryptionKey: key,
+    // });
+
+    const pushModelRole = new aws_iam.Role(this, 'PushModelRole', {
+        assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
+        managedPolicies: [
+          aws_iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
+          aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
+        ],
     });
-    const mlBucketSecret = new aws_secretsmanager.Secret(this, 'MlOutputSecret', {
-      secretName: 'MlBucketArn',
-      secretStringValue: SecretValue.unsafePlainText(mlOutputBucket.bucketArn),
-      encryptionKey: key,
+
+    const gitOwner = this.node.tryGetContext('gitOwner');
+    const gitRepo = this.node.tryGetContext('gitRepo');
+    const gitArn = this.node.tryGetContext('gitArn');
+
+    // Fix hardcoded values
+    const pushCode = new aws_codebuild.Project(this, 'FWBuild', {
+        projectName: "PushCode",
+        source: aws_codebuild.Source.gitHub({
+            owner: gitOwner,
+            repo: gitRepo,
+        }),
+        environmentVariables: {
+            ML_OUTPUT_BUCKET: { value: mlOutputBucket.bucketName },
+        },
+        environment:  {
+            computeType: ComputeType.SMALL,
+            buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
+        },
+        timeout: Duration.minutes(5),
+        buildSpec: aws_codebuild.BuildSpec.fromObject({
+            version: 0.2,
+            env: {"git-credential-helper": "yes"},
+            phases: {
+                build: {
+                  commands: [
+                    'git config --global user.name "codebuild-ml"',
+                    'git config --global user.email "codebuild-ml"',
+                    'ls -la',
+                    'git checkout retrained-model || git checkout -b retrained-model',
+                    'rm -r models/ml-source-ablrv/*',
+                    'aws s3 cp s3://${ML_OUTPUT_BUCKET}/ml/tmp/ml/ models/ml-source-ablrv --recursive --quiet',
+                    'git add --all',
+                    'git commit -m "retrained model"',
+                    'git push -u origin retrained-model'
+                  ]
+                }
+            },
+        }),
+        logging: {
+            cloudWatch: {
+                logGroup: new aws_logs.LogGroup(this, `PushCodeLogGroup`),
+            },
+        },
     });
+
+    build.onBuildSucceeded('BuildSucceed', {
+        target: new aws_events_targets.CodeBuildProject(pushCode),
+    });
+
+    mlOutputBucket.grantRead(pushCode);
+    pushCode.role?.addToPrincipalPolicy(
+        new aws_iam.PolicyStatement({ actions: ['kms:Decrypt'], resources: ['*'] })
+    );
+
+    const codeConnectionPolicy = new aws_iam.Policy(this, 'CodeConnectionPolicy', {
+        statements: [
+            new aws_iam.PolicyStatement({
+            actions: ['codeconnections:GetConnectionToken', 'codeconnections:GetConnection'],
+            resources: [gitArn],
+            }),
+        ],
+    });
+    pushCode.role!.attachInlinePolicy(codeConnectionPolicy);
+    // create the policy before the project
+    (pushCode.node.defaultChild as cdk.CfnResource).addDependency(codeConnectionPolicy.node.defaultChild as cdk.CfnResource);
   }
 }
