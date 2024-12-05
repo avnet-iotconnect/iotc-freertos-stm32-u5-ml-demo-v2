@@ -372,12 +372,17 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
 	} else if (NULL != strstr(payload, RETRAIN_CMD)) {
 		if (scan_command_number_arg(payload, RETRAIN_CMD, &retrain_cmd_arg)) {
 			LogInfo("Retrain command received: %d", retrain_cmd_arg);
-			RetrainData_t message;
-			message.buffer = (void*)pucAudioBuff;
-			message.buffer_size = AUDIO_BUFF_SIZE;
-			RetrainData_enqueue(&message);
+			
+			const char * classification = RetrainHandler_GetClassName(retrain_cmd_arg);
+
+			if(classification)
+				if(RetrainHandler_EnqueueBufferData(classification) == RETRAIN_HANDLER_OK)
+					LogDebug("Retrain data enqueued successfully");
+			else
+				LogError("Failed to retrieve classification argument: %d", retrain_cmd_arg);
+			
 		} else {
-			LogError("Failed %s!", RETRAIN_CMD);
+			LogError("Failed scanning %s command arguments", RETRAIN_CMD);
 		}
     } else {
     	LogError("Unknown command!");
@@ -610,6 +615,13 @@ void vMicSensorPublishTask(void *pvParameters)
 							confidence_score_percent,
 							confidence_threshold
 					);
+
+					// In case of low confidence, we need to retrain the model 
+					// with the retrain buffer completely filled.
+					if (is_dma_cplt_event(ulNotifiedValue)) {
+						RetrainHandler_SetBufferData(pucAudioBuff, AUDIO_BUFF_SIZE);
+						LogDebug("Retrain buffer is fully populated.");
+					}
 					break;
 				}
 
