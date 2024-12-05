@@ -101,7 +101,7 @@ def creat_rule(rule_name: str, webhook_url: str, template_guid: str, entity_guid
         "templateGuid": template_guid,
         "name": rule_name,
         "severityLevelGuid": major_guid,
-        "conditionText": "request_s3 = True",
+        "conditionText": 'request_s3 = "True"',
         "ignorePreference": False,
         "applyTo": 1,
         "entityGuid": entity_guid,
