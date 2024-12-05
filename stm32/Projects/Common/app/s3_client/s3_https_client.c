@@ -74,11 +74,8 @@
 "sSi6\n"\
 "-----END CERTIFICATE-----"
 
-/* Uncomment the following line to enable dumping of user headers */
-#define ENABLE_USER_HEADERS_DUMP
-
 /* Uncomment the following line to enable dumping of payload data */
-#define ENABLE_PAYLOAD_HEXDUMP
+// #define ENABLE_PAYLOAD_HEXDUMP
 /* Number of bytes to display in each line of the payload hexdump */
 #define PAYLOAD_HEXDUMP_BYTES 16
 
@@ -302,42 +299,5 @@ int S3Client_Disconnect(void)
     {
         LogWarn("Disconnect called, but network context is already NULL.");
         return S3_CLIENT_ERROR;    // Return error code if no network context
-    }
-}
-
-void vS3ConnectTask( void * pvParameters )
-{
-    ( void ) pvParameters;
-
-    /* Block until the network interface is connected */
-	( void ) xEventGroupWaitBits( xSystemEvents,
-								  EVT_MASK_NET_CONNECTED | 
-                                  EVT_MASK_MQTT_CONNECTED,
-								  pdFALSE,
-								  pdTRUE,
-								  portMAX_DELAY );
-        
-        S3Client_Init();
-        S3Client_Connect();
-
-        /* Test code */
-    const char *small_payload = "Hello, World!";
-
-        HTTPCustomHeader_t headers[] = {
-            {"Content-Type", "audio/wav"},
-            {"x-api-key", "DkIxv0zK8T7qHHajtc5y58182rBycj6V7OTMzsEe"}
-        };
-
-        int result = S3Client_Post(
-        small_payload, 
-        strlen(small_payload), 
-            headers, 
-            sizeof(headers) / sizeof(headers[0])
-        );
-        printf("Large file upload result: %d\n", result);
-
-    while(1)
-        {
-
     }
 }
