@@ -1,0 +1,84 @@
+version: 0.2
+artifacts:
+  files:
+    - /tmp/ml/**/*
+  name: ml
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - python3 --version
+      - pip install --upgrade pip
+      - echo "Cython<3" > cython_constraint.txt
+      - PIP_CONSTRAINT=cython_constraint.txt
+      - pip install --upgrade .
+
+  pre_build:
+    commands:
+      - aws s3api head-object --bucket ${ARTIFACT_BUCKET} --key train/datasets/FSD50K/FSD50K.ground_truth/dev.csv || NOT_EXIST=true
+      - |
+        if [ $NOT_EXIST ]; then
+          echo "Downloading FSD50K Dataset..." ;
+
+          echo "Downloading Dev Audio..." ;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z01 -q;
+          echo "1 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z02 -q;
+          echo "2 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z03 -q;
+          echo "3 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z04 -q;
+          echo "4 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z05 -q;
+          echo "5 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.zip -q;
+          echo "6 loaded";
+          df -h;
+          zip -q -s 0 FSD50K.dev_audio.zip --out FSD50K.dev_audio-unsplit.zip;
+
+          df -h;
+          echo "Downloading Eval Audio..." ;
+          wget https://zenodo.org/records/4060432/files/FSD50K.eval_audio.z01 -q;
+          wget https://zenodo.org/records/4060432/files/FSD50K.eval_audio.zip -q;
+          zip -q -s 0 FSD50K.eval_audio.zip --out FSD50K.eval_audio-unsplit.zip;
+
+          df -h;
+          echo "Downloading Ground Truth..." ;
+          wget https://zenodo.org/records/4060432/files/FSD50K.ground_truth.zip -q;
+
+          df -h;
+          echo "Unziping..." ;
+          mkdir temp;
+          unzip -q FSD50K.ground_truth.zip -d temp/;
+          rm FSD50K.ground_truth.zip;
+          df -h;
+          unzip -q FSD50K.eval_audio-unsplit.zip -d temp/;
+          rm FSD50K.eval_audio-unsplit.zip;
+          df -h;
+          
+          unzip -q FSD50K.dev_audio-unsplit.zip -d temp/;
+          rm FSD50K.dev_audio-unsplit.zip;
+          df -h;
+
+          echo "Uploading..." ;
+          aws s3 cp temp s3://${ARTIFACT_BUCKET}/train/datasets/FSD50K/ --recursive --quiet;
+        fi
+
+  build:
+    commands:
+      - export PYTHONUNBUFFERED=TRUE
+      - export SAGEMAKER_PROJECT_NAME_ID="${SAGEMAKER_PROJECT_NAME}-${SAGEMAKER_PROJECT_ID}"
+      - |
+        run-pipeline --module-name pipelines.stm.pipeline \
+          --role-arn $SAGEMAKER_PIPELINE_ROLE_ARN \
+          --tags "[{\"Key\":\"sagemaker:project-name\", \"Value\":\"${SAGEMAKER_PROJECT_NAME}\"}, {\"Key\":\"sagemaker:project-id\", \"Value\":\"${SAGEMAKER_PROJECT_ID}\"}]" \
+          --kwargs "{\"region\":\"${AWS_REGION}\",\"role\":\"${SAGEMAKER_PIPELINE_ROLE_ARN}\",\"default_bucket\":\"${ARTIFACT_BUCKET}\",\"pipeline_name\":\"${SAGEMAKER_PROJECT_NAME_ID}\",\"model_package_group_name\":\"${SAGEMAKER_PROJECT_NAME_ID}\",\"base_job_prefix\":\"${SAGEMAKER_PROJECT_NAME_ID}\",\"sagemaker_project_name\":\"${SAGEMAKER_PROJECT_NAME}\"}"
+      - echo "Create/Update of the SageMaker Pipeline and execution completed."
+      - aws s3 cp s3://${ARTIFACT_BUCKET}/evaluation/build/ /tmp/ml --recursive
