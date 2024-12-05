@@ -117,6 +117,30 @@ static int inactivity_timeout = 5000;
 static int retrain_cmd_arg = 0;
 static int confidence_offsets[AI_NETWORK_OUT_1_SIZE] = {0, -49, -19, 39, 27, -25};
 /*-----------------------------------------------------------*/
+/**
+ * @brief Checks if the MIC_EVT_DMA_HALF event flag is set in the notified value.
+ *
+ * This function evaluates whether the `MIC_EVT_DMA_HALF` flag is present within
+ * the `notifiedValue`. It is used to determine if the DMA half-transfer event
+ * has occurred.
+ *
+ * @param notifiedValue The value received from task notifications.
+ * @return `true` if the `MIC_EVT_DMA_HALF` flag is set, `false` otherwise.
+ */
+static bool is_dma_half_event(uint32_t notifiedValue);
+
+/**
+ * @brief Checks if the MIC_EVT_DMA_CPLT event flag is set in the notified value.
+ *
+ * This function evaluates whether the `MIC_EVT_DMA_CPLT` flag is present within
+ * the `notifiedValue`. It is used to determine if the DMA complete-transfer event
+ * has occurred.
+ *
+ * @param notifiedValue The value received from task notifications.
+ * @return `true` if the `MIC_EVT_DMA_CPLT` flag is set, `false` otherwise.
+ */
+static bool is_dma_cplt_event(uint32_t notifiedValue);
+/*-----------------------------------------------------------*/
 static void prvPublishCommandCallback(MQTTAgentCommandContext_t *pxCommandContext,
 									  MQTTAgentReturnInfo_t *pxReturnInfo)
 {
@@ -398,6 +422,14 @@ static bool is_detection_blocked(void) {
 	return ((int)(pdMS_TO_TICKS(xTaskGetTickCount()) - last_detection_time) < inactivity_timeout);
 }
 
+static bool is_dma_half_event(uint32_t notifiedValue) {
+    return (notifiedValue & MIC_EVT_DMA_HALF) != 0;
+}
+
+static bool is_dma_cplt_event(uint32_t notifiedValue) {
+    return (notifiedValue & MIC_EVT_DMA_CPLT) != 0;
+}
+
 void vMicSensorPublishTask(void *pvParameters)
 {
 	BaseType_t xResult = pdFALSE;
@@ -524,11 +556,11 @@ void vMicSensorPublishTask(void *pvParameters)
 
 		if (xTaskNotifyWait(0, 0xFFFFFFFF, &ulNotifiedValue, portMAX_DELAY) == pdTRUE) {
 			/**
-			 * Audio pre-processing on audio half buffer
+			 * Audio pre-processing on audio buffer events
 			 */
-			if (ulNotifiedValue & MIC_EVT_DMA_HALF)
+			if (is_dma_half_event(ulNotifiedValue))
 				PreProc_DPU(&xAudioProcCtx, pucAudioBuff, pcSpectroGram);
-			if (ulNotifiedValue & MIC_EVT_DMA_CPLT)
+			if (is_dma_cplt_event(ulNotifiedValue))
 				PreProc_DPU(&xAudioProcCtx, pucAudioBuff + AUDIO_HALF_BUFF_SIZE, pcSpectroGram);
 
 			/**
