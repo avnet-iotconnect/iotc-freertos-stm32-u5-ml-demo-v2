@@ -32,6 +32,15 @@
             "aggregateTypes": []
         }
     ],
+    "commands": [
+        {
+            "name": "S3 credentials",
+            "command": "creds_s3",
+            "requiredParam": true,
+            "requiredAck": false,
+            "isOTACommand": false
+        }
+    ],
     "messageVersion": "2.1",
     "msgCode": "43WPJCX",
     "greenGrass": "0",

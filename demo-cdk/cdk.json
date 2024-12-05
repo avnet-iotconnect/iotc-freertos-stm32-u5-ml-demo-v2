@@ -20,10 +20,8 @@
     "config": {
       "stUsernameSecret": "STDEVCLOUD_USERNAME_SECRET",
       "stPasswordSecret": "STDEVCLOUD_PASSWORD_SECRET",
-      "iotConnectUsernameSecret": "IOTCONNECT_USERNAME_SECRET",
-      "iotConnectPasswordSecret": "IOTCONNECT_PASSWORD_SECRET",
-      "iotConnectSolutionKeySecret": "IOTCONNECT_SOLUTIONKEY_SECRET",
-      "iotConnectEntitySecret": "IOTCONNECT_ENTITY_SECRET"
+      "s3ApiKeySecret": "S3_APIKEY_SECRET",
+      "s3ApiKeyPlaceHolder": "[S3_APIKEY_PLACEHOLDER]"
     },
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,

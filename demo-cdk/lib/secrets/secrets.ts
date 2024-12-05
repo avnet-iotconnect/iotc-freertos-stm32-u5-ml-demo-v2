@@ -7,15 +7,13 @@ import {
 import { Construct } from 'constructs';
 
 export class SecretsConstruct extends Construct {
+    public readonly s3ApiKeySecret: aws_secretsmanager.Secret;
+
     constructor(scope: Construct, id: string) {
         super(scope, id);
         const config = this.node.tryGetContext('config');
         const stUsername = this.node.tryGetContext('stUsername');
         const stPassword = this.node.tryGetContext('stPassword');
-        const iotConnectUsername = this.node.tryGetContext('iotConnectUsername');
-        const iotConnectPassword = this.node.tryGetContext('iotConnectPassword');
-        const iotConnectSolutionKey = this.node.tryGetContext('iotConnectSolutionKey');
-        const iotConnectEntity = this.node.tryGetContext('iotConnectEntity');
 
         new aws_secretsmanager.Secret(this, 'stUsernameSecret', {
             secretName: config.stUsernameSecret,
@@ -27,24 +25,9 @@ export class SecretsConstruct extends Construct {
             secretStringValue: SecretValue.unsafePlainText(stPassword),
         });
 
-        new aws_secretsmanager.Secret(this, 'iotConnectUsernameSecret', {
-            secretName: config.iotConnectUsernameSecret,
-            secretStringValue: SecretValue.unsafePlainText(iotConnectUsername),
-        });
-
-        new aws_secretsmanager.Secret(this, 'iotConnectPasswordSecret', {
-            secretName: config.iotConnectPasswordSecret,
-            secretStringValue: SecretValue.unsafePlainText(iotConnectPassword),
-        });
-
-        new aws_secretsmanager.Secret(this, 'iotConnectSolutionKeySecret', {
-            secretName: config.iotConnectSolutionKeySecret,
-            secretStringValue: SecretValue.unsafePlainText(iotConnectSolutionKey),
-        });
-
-        new aws_secretsmanager.Secret(this, 'iotConnectEntitySecret', {
-            secretName: config.iotConnectEntitySecret,
-            secretStringValue: SecretValue.unsafePlainText(iotConnectEntity),
+        this.s3ApiKeySecret = new aws_secretsmanager.Secret(this, 's3ApiKeySecret', {
+            secretName: config.s3ApiKeySecret,
+            secretStringValue: SecretValue.unsafePlainText(config.s3ApiKeyPlaceHolder),
         });
     }
 }
