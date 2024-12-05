@@ -74,11 +74,8 @@
 "sSi6\n"\
 "-----END CERTIFICATE-----"
 
-/* Uncomment the following line to enable dumping of user headers */
-#define ENABLE_USER_HEADERS_DUMP
-
 /* Uncomment the following line to enable dumping of payload data */
-#define ENABLE_PAYLOAD_HEXDUMP
+// #define ENABLE_PAYLOAD_HEXDUMP
 /* Number of bytes to display in each line of the payload hexdump */
 #define PAYLOAD_HEXDUMP_BYTES 16
 
@@ -125,8 +122,8 @@ int S3Client_Connect(void)
 
     /* Allocate network context for TLS transport */
     LogDebug("Allocating network context for TLS.");
-    NetworkContext_t *networkContextPtr = mbedtls_transport_allocate();
-    if (networkContextPtr == NULL)
+    ptrNetworkContext = mbedtls_transport_allocate();
+    if (ptrNetworkContext == NULL)
     {
         LogError("Failed to allocate network context!");
         return S3_CLIENT_ERROR; // Return generic error code
@@ -140,7 +137,7 @@ int S3Client_Connect(void)
     };
 
     tlsTransportStatus = mbedtls_transport_configure(
-        networkContextPtr,
+        ptrNetworkContext,
         alpnProtocols,
         NULL,
         NULL,
@@ -151,24 +148,21 @@ int S3Client_Connect(void)
     if (tlsTransportStatus != TLS_TRANSPORT_SUCCESS)
     {
         LogError("Failed to configure TLS transport! Error Code: %d", tlsTransportStatus);
-        mbedtls_transport_free(networkContextPtr);
+        mbedtls_transport_free(ptrNetworkContext);
         return S3_CLIENT_TLS_ERROR; // Return TLS specific error code
     }
     LogDebug("TLS transport configured successfully.");
 
     /* Establish the TLS connection to AWS S3 */
     LogInfo("Connecting to AWS S3 at %s:%d.", S3_HOSTNAME, S3_HTTPS_PORT);
-    tlsTransportStatus = mbedtls_transport_connect(networkContextPtr, S3_HOSTNAME, S3_HTTPS_PORT, 10000, 10000);
+    tlsTransportStatus = mbedtls_transport_connect(ptrNetworkContext, S3_HOSTNAME, S3_HTTPS_PORT, 10000, 10000);
     if (tlsTransportStatus != TLS_TRANSPORT_SUCCESS)
     {
         LogError("Failed to connect to AWS S3! Error Code: %d", tlsTransportStatus);
-        mbedtls_transport_free(networkContextPtr);
+        mbedtls_transport_free(ptrNetworkContext);
         return S3_CLIENT_NETWORK_ERROR; // Return network specific error code
     }
     LogInfo("Successfully connected to AWS S3.");
-
-    /* Store the network context for later use */
-    ptrNetworkContext = networkContextPtr;
 
     /* Initialize the transport interface with the network context and transport functions */
     transport_if.pNetworkContext = ptrNetworkContext;
@@ -305,42 +299,5 @@ int S3Client_Disconnect(void)
     {
         LogWarn("Disconnect called, but network context is already NULL.");
         return S3_CLIENT_ERROR;    // Return error code if no network context
-    }
-}
-
-void vS3ConnectTask( void * pvParameters )
-{
-    ( void ) pvParameters;
-
-    /* Block until the network interface is connected */
-	( void ) xEventGroupWaitBits( xSystemEvents,
-								  EVT_MASK_NET_CONNECTED | 
-                                  EVT_MASK_MQTT_CONNECTED,
-								  pdFALSE,
-								  pdTRUE,
-								  portMAX_DELAY );
-
-    S3Client_Init();
-    S3Client_Connect();
-
-    /* Test code */
-    const char *small_payload = "Hello, World!";
-
-    HTTPCustomHeader_t headers[] = {
-        {"Content-Type", "audio/wav"},
-        {"x-api-key", "DkIxv0zK8T7qHHajtc5y58182rBycj6V7OTMzsEe"}
-    };
-    
-    int result = S3Client_Post(
-        small_payload, 
-        strlen(small_payload), 
-        headers, 
-        sizeof(headers) / sizeof(headers[0])
-    );
-    printf("Large file upload result: %d\n", result);
-
-    while(1)
-    {
-
     }
 }

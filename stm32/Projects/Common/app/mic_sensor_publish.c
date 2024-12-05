@@ -62,6 +62,8 @@
 /* AI includes */
 #include "ai_dpu.h"
 
+#include "app/retrain/retrain_handler.h"
+
 extern UBaseType_t uxRand(void);
 
 #define MQTT_PUBLISH_MAX_LEN (512)
@@ -112,8 +114,32 @@ static TaskHandle_t xMicTask;
 static TickType_t last_detection_time;
 static int confidence_threshold = 42;
 static int inactivity_timeout = 5000;
+static int retrain_cmd_arg = 0;
 static int confidence_offsets[AI_NETWORK_OUT_1_SIZE] = {0, -49, -19, 39, 27, -25};
+/*-----------------------------------------------------------*/
+/**
+ * @brief Checks if the MIC_EVT_DMA_HALF event flag is set in the notified value.
+ *
+ * This function evaluates whether the `MIC_EVT_DMA_HALF` flag is present within
+ * the `notifiedValue`. It is used to determine if the DMA half-transfer event
+ * has occurred.
+ *
+ * @param notifiedValue The value received from task notifications.
+ * @return `true` if the `MIC_EVT_DMA_HALF` flag is set, `false` otherwise.
+ */
+static bool is_dma_half_event(uint32_t notifiedValue);
 
+/**
+ * @brief Checks if the MIC_EVT_DMA_CPLT event flag is set in the notified value.
+ *
+ * This function evaluates whether the `MIC_EVT_DMA_CPLT` flag is present within
+ * the `notifiedValue`. It is used to determine if the DMA complete-transfer event
+ * has occurred.
+ *
+ * @param notifiedValue The value received from task notifications.
+ * @return `true` if the `MIC_EVT_DMA_CPLT` flag is set, `false` otherwise.
+ */
+static bool is_dma_cplt_event(uint32_t notifiedValue);
 /*-----------------------------------------------------------*/
 static void prvPublishCommandCallback(MQTTAgentCommandContext_t *pxCommandContext,
 									  MQTTAgentReturnInfo_t *pxReturnInfo)
@@ -310,6 +336,7 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
     const char* OFFSETS_CMD = "set-confidence-offsets ";
     const char* THRESHOLD_CMD = "set-confidence-threshold ";
     const char* INACTIVITY_TIMEOUT_CMD = "set-inactivity-timeout ";
+	const char* RETRAIN_CMD = "retrain";
     if (!publish_info) {
         LogError("on_c2d_message: Publish info is NULL?");
         return;
@@ -342,6 +369,21 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
     	} else {
     		LogError("Failed %s!", INACTIVITY_TIMEOUT_CMD);
     	}
+	} else if (NULL != strstr(payload, RETRAIN_CMD)) {
+		if (scan_command_number_arg(payload, RETRAIN_CMD, &retrain_cmd_arg)) {
+			LogInfo("Retrain command received: %d", retrain_cmd_arg);
+			
+			const char * classification = RetrainHandler_GetClassName(retrain_cmd_arg);
+
+			if(classification)
+				if(RetrainHandler_EnqueueBufferData(classification) == RETRAIN_HANDLER_OK)
+					LogDebug("Retrain data enqueued successfully");
+			else
+				LogError("Failed to retrieve classification argument: %d", retrain_cmd_arg);
+			
+		} else {
+			LogError("Failed scanning %s command arguments", RETRAIN_CMD);
+		}
     } else {
     	LogError("Unknown command!");
     }
@@ -383,6 +425,14 @@ static void set_detected_now(void) {
 }
 static bool is_detection_blocked(void) {
 	return ((int)(pdMS_TO_TICKS(xTaskGetTickCount()) - last_detection_time) < inactivity_timeout);
+}
+
+static bool is_dma_half_event(uint32_t notifiedValue) {
+    return (notifiedValue & MIC_EVT_DMA_HALF) != 0;
+}
+
+static bool is_dma_cplt_event(uint32_t notifiedValue) {
+    return (notifiedValue & MIC_EVT_DMA_CPLT) != 0;
 }
 
 void vMicSensorPublishTask(void *pvParameters)
@@ -511,11 +561,11 @@ void vMicSensorPublishTask(void *pvParameters)
 
 		if (xTaskNotifyWait(0, 0xFFFFFFFF, &ulNotifiedValue, portMAX_DELAY) == pdTRUE) {
 			/**
-			 * Audio pre-processing on audio half buffer
+			 * Audio pre-processing on audio buffer events
 			 */
-			if (ulNotifiedValue & MIC_EVT_DMA_HALF)
+			if (is_dma_half_event(ulNotifiedValue))
 				PreProc_DPU(&xAudioProcCtx, pucAudioBuff, pcSpectroGram);
-			if (ulNotifiedValue & MIC_EVT_DMA_CPLT)
+			if (is_dma_cplt_event(ulNotifiedValue))
 				PreProc_DPU(&xAudioProcCtx, pucAudioBuff + AUDIO_HALF_BUFF_SIZE, pcSpectroGram);
 
 			/**
@@ -565,6 +615,13 @@ void vMicSensorPublishTask(void *pvParameters)
 							confidence_score_percent,
 							confidence_threshold
 					);
+
+					// In case of low confidence, we need to retrain the model 
+					// with the retrain buffer completely filled.
+					if (is_dma_cplt_event(ulNotifiedValue)) {
+						RetrainHandler_SetBufferData(pucAudioBuff, AUDIO_BUFF_SIZE);
+						LogDebug("Retrain buffer is fully populated.");
+					}
 					break;
 				}
 

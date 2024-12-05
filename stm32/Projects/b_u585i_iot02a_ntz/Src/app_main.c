@@ -46,6 +46,8 @@
 
 #include "cli/cli.h"
 
+#include "app/retrain/retrain_handler.h"
+
 static lfs_t * pxLfsCtx = NULL;
 
 EventGroupHandle_t xSystemEvents = NULL;
@@ -181,14 +183,18 @@ extern void vDefenderAgentTask( void * );
 
 extern void otaPal_EarlyInit( void );
 
-#include "app/s3_client/s3_https_client.h"
-
 void vInitTask( void * pvArgs )
 {
     BaseType_t xResult;
     int xMountStatus;
 
     ( void ) pvArgs;
+
+    RetrainHandlerStatus_t initStatus = RetrainHandler_init();
+
+    if(RETRAIN_HANDLER_OK != initStatus) {
+        LogError("Failed to initialize RetrainHandler");
+    }
 
     xResult = xTaskCreate( Task_CLI, "cli", 2048, NULL, 10, NULL );
     configASSERT( xResult == pdTRUE );
@@ -230,7 +236,7 @@ void vInitTask( void * pvArgs )
     xResult = xTaskCreate( vMicSensorPublishTask, "MicSense", 1024, NULL, 6, NULL );
     configASSERT( xResult == pdTRUE );
 
-    xResult = xTaskCreate( vS3ConnectTask, "S3Client", 1024, NULL, 7, NULL );
+    xResult = xTaskCreate( vRetrainProcessingTask, "Retrain", 1024, NULL, 7, NULL );
     configASSERT( xResult == pdTRUE );
 
 /*

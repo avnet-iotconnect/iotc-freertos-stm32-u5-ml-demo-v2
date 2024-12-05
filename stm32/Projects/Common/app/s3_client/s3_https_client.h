@@ -99,14 +99,4 @@ int S3Client_Post(const char *payload,
  */
 int S3Client_Disconnect(void);
 
-/**
- * @brief Task function to test S3 functionality.
- * 
- * This FreeRTOS task function is used to test the S3 client operations such as 
- * establishing a connection, uploading and downloading objects, and disconnecting.
- * 
- * @param pvParameters Parameters passed to the task.
- */
-void vS3ConnectTask(void *pvParameters);
-
 #endif /* S3_HTTPS_CLIENT_H */
