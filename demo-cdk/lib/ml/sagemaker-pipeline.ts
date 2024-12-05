@@ -304,7 +304,7 @@ export class SagmakerPipeline extends Construct {
               '--packages': 'bundle',
             },
         },
-        waitHandlerRole,
+        role: waitHandlerRole,
     });
 
     new aws_cloudformation.CfnWaitCondition(this, 'CfnWaitCondition' + Date.now(), {
