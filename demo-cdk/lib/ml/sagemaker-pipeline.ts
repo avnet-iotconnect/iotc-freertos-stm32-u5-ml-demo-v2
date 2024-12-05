@@ -249,80 +249,81 @@ export class SagmakerPipeline extends Construct {
     (pushCode.node.defaultChild as cdk.CfnResource).addDependency(codeConnectionPolicy.node.defaultChild as cdk.CfnResource);
 
     // Download sound data during deployment
-  
-    //   const downloadEncryptionKey = new aws_kms.Key(this, 'DownloadEncryptionKey', {
-    //     removalPolicy: RemovalPolicy.DESTROY,
-    //     enableKeyRotation: true,
-    //   });
-  
-    //   const downloadBuild = new aws_codebuild.Project(this, 'DownloadBuild', {
-    //     environment: { 
-    //       computeType: ComputeType.LARGE,
-    //       buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
-    //     },
-    //     timeout: Duration.minutes(120),
-    //     encryptionKey: buildEncryptionKey,
-    //     environmentVariables: {
-    //       ARTIFACT_BUCKET: { value: dataSetsBucket.bucketName },
-    //     },
-    //     buildSpec: aws_codebuild.BuildSpec.fromAsset('lib/ml/dlbuildspec.yml'),
-    //     logging: {
-    //       cloudWatch: {
-    //         logGroup: new aws_logs.LogGroup(this, `DownloadBuildLogGroup`),
-    //       },
-    //     },
-    //   });
-    //   dataSetsBucket.grantReadWrite(build);
-    //   mlOpsCode.bucket.grantReadWrite(build);
-    //   build.role?.addManagedPolicy(
-    //     aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSageMakerFullAccess')
-    //   );
-  
-    //   const param = new aws_ssm.StringParameter(this, 'StringParameter', {
-    //     stringValue: '0',
-    //   });
-  
-    //   const role = new aws_iam.Role(this, 'FnRole', {
-    //     assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
-    //     managedPolicies: [
-    //       aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMFullAccess'),
-    //       aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeBuildAdminAccess'),
-    //     ],
-    //   });
-  
-    //   const { ref: waitCompletionUrl } = new aws_cloudformation.CfnWaitConditionHandle(
-    //     this,
-    //     'CfnWaitConditionHandle' + Date.now()
-    //   );
-  
-    //   const fn = new aws_lambda_nodejs.NodejsFunction(this, 'wait-handler', {
-    //     runtime: aws_lambda.Runtime.NODEJS_18_X,
-    //     environment: {
-    //       assetHash: mlOpsCode.assetHash,
-    //       paramName: param.parameterName,
-    //       projectName: build.projectName,
-    //       runEveryTime: Date.now().toString(),
-    //     },
-    //     role,
-    //   });
-  
-    //   new aws_cloudformation.CfnWaitCondition(this, 'CfnWaitCondition' + Date.now(), {
-    //     handle: waitCompletionUrl,
-    //     timeout: '7200',
-    //     count: 1,
-    //   });
-  
-    //   build.onBuildSucceeded('BuildSucceed', {
-    //     target: new aws_events_targets.LambdaFunction(fn),
-    //   });
-    //   build.onBuildFailed('BuildFail', {
-    //     target: new aws_events_targets.LambdaFunction(fn),
-    //   });
-  
-    //   new triggers.Trigger(this, 'BuildTrigger', {
-    //     handler: fn,
-    //     invocationType: triggers.InvocationType.EVENT,
-    //     executeAfter: [build],
-    //   });
+    const downloadEncryptionKey = new aws_kms.Key(this, 'DownloadEncryptionKey', {
+        removalPolicy: RemovalPolicy.DESTROY,
+        enableKeyRotation: true,
+    });
+
+    const downloadBuild = new aws_codebuild.Project(this, 'DownloadBuild', {
+        environment: { 
+            computeType: ComputeType.LARGE,
+            buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
+        },
+        timeout: Duration.minutes(120),
+        encryptionKey: downloadEncryptionKey,
+        environmentVariables: {
+            ARTIFACT_BUCKET: { value: dataSetsBucket.bucketName },
+        },
+        buildSpec: aws_codebuild.BuildSpec.fromAsset('lib/ml/dlbuildspec.yml'),
+        logging: {
+            cloudWatch: {
+            logGroup: new aws_logs.LogGroup(this, `DownloadBuildLogGroup`),
+            },
+        },
+    });
+
+    dataSetsBucket.grantReadWrite(downloadBuild);
+
+    const param = new aws_ssm.StringParameter(this, 'StringParameter', {
+        stringValue: '0',
+    });
+
+    const waitHandlerRole = new aws_iam.Role(this, 'WaitHandlerRole', {
+        assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
+        managedPolicies: [
+            aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMFullAccess'),
+            aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeBuildAdminAccess'),
+        ],
+    });
+
+    const { ref: waitCompletionUrl } = new aws_cloudformation.CfnWaitConditionHandle(
+        this,
+        'CfnWaitConditionHandle' + Date.now()
+    );
+
+    const waitHandler = new aws_lambda_nodejs.NodejsFunction(this, 'wait-handler', {
+        runtime: aws_lambda.Runtime.NODEJS_18_X,
+        environment: {
+            assetHash: mlOpsCode.assetHash,
+            paramName: param.parameterName,
+            projectName: downloadBuild.projectName,
+            runEveryTime: Date.now().toString(),
+        },
+        bundling: {
+            esbuildArgs: {
+              '--packages': 'bundle',
+            },
+        },
+        waitHandlerRole,
+    });
+
+    new aws_cloudformation.CfnWaitCondition(this, 'CfnWaitCondition' + Date.now(), {
+        handle: waitCompletionUrl,
+        timeout: '7200',
+        count: 1,
+    });
+
+    downloadBuild.onBuildSucceeded('BuildSucceed', {
+        target: new aws_events_targets.LambdaFunction(waitHandler),
+    });
+    downloadBuild.onBuildFailed('BuildFail', {
+        target: new aws_events_targets.LambdaFunction(waitHandler),
+    });
+
+    new triggers.Trigger(this, 'BuildTrigger', {
+        handler: waitHandler,
+        invocationType: triggers.InvocationType.EVENT,
+        executeAfter: [downloadBuild],
+    });
   }
 }
