@@ -9,7 +9,9 @@ from common.constants import (
     API_EVENT_URL,
     DEVICE_SOUND_CLASS,
     RULE,
-    SEVERETY_LOOKUP
+    USER,
+    SEVERETY_LOOKUP,
+    API_USER_URL
 )
 from common.check_status import check_status, BadHttpStatusException
 from common.common import (
@@ -21,14 +23,14 @@ from common.common import (
 
 def iot_connect_rule():
     """Create webhook rule in IoTConnect"""
-    webhook_url = "https://ycla29ntre.execute-api.us-west-2.amazonaws.com/prod/webhook"
+    webhook_url = "https://0ozzw8hv4e.execute-api.us-west-2.amazonaws.com/prod/webhook"
     args = parse_arguments()
     access_token = authenticate(args.username, args.password, args.solution_key)
     print("Successful login - now create webhook Rule.")
     template_guid = get_template_guid(DEVICE_SOUND_CLASS, access_token)
     entity_guid = get_entity_guid(args.entity_name, access_token)
     delete_rule_if_exists(DEVICE_SOUND_CLASS, access_token)
-    creat_rule(DEVICE_SOUND_CLASS, webhook_url, template_guid, entity_guid, access_token)
+    creat_rule(DEVICE_SOUND_CLASS, webhook_url, template_guid, entity_guid, args.entity_name, access_token)
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -68,22 +70,50 @@ def delete_rule(guid: str, access_token: str):
     check_status(response)
     print("Rule deleted")
 
-def creat_rule(rule_name: str, webhook_url: str, template_guid: str, entity_guid: str, access_token: str):
+def get_user_role(entity_name: str, access_token: str) -> dict:
+    """Get first role and user guids from the IoTConnect"""
+    headers = {
+        "Authorization": access_token
+    }
+    params = {
+        "Entity": entity_name
+    }
+    response = requests.get(API_USER_URL + USER, headers = headers, params = params)
+    check_status(response)
+    response_json = response.json()
+    
+
+    user = response_json["data"][0]["guid"]
+    role = response_json["data"][0]["roleGuid"]
+
+    user_role = {
+        "user": user,
+        "role": role
+    }
+    print("user = " + user)
+    print("role = " + role)
+    return user_role
+
+
+def creat_rule(rule_name: str, webhook_url: str, template_guid: str, entity_guid: str, entity_name: str, access_token: str):
     """Create device in IoTConnect from given data"""
     major_guid = get_major_guid(access_token)
+    user_role = get_user_role(entity_name, access_token)
 
     data = {
         "ruleType": 1,
         "templateGuid": template_guid,
         "name": rule_name,
         "severityLevelGuid": major_guid,
-        "conditionText": "request_s3 = True",
+        "conditionText": 'requests3 = "True"',
         "ignorePreference": False,
         "applyTo": 1,
         "entityGuid": entity_guid,
         "deliveryMethod": ["WebHook"],
         "url": webhook_url,
         "webhookMsgFormat": 2,
+        "roles": [user_role["role"]],
+        "users": [user_role["user"]],
     }
 
     headers = {

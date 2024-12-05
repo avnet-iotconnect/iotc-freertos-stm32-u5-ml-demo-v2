@@ -11,7 +11,9 @@ from common.constants import (
     API_EVENT_URL,
     DEVICE_SOUND_CLASS,
     RULE,
-    SEVERETY_LOOKUP
+    USER,
+    SEVERETY_LOOKUP,
+    API_USER_URL
 )
 from common.check_status import check_status, BadHttpStatusException
 from common.common import (
@@ -69,7 +71,7 @@ def create_webhook_rules():
     template_guid = get_template_guid(DEVICE_SOUND_CLASS, access_token)
     entity_guid = get_entity_guid(entity, access_token)
     delete_rule_if_exists(DEVICE_SOUND_CLASS, access_token)
-    creat_rule(DEVICE_SOUND_CLASS, webhook_endpoint, template_guid, entity_guid, access_token)
+    creat_rule(DEVICE_SOUND_CLASS, webhook_endpoint, template_guid, entity_guid, entity, access_token)
 
 def delete_rule_if_exists(rule_name: str, access_token: str):
     # Delete rule if exists
@@ -92,9 +94,34 @@ def delete_rule(guid: str, access_token: str):
     check_status(response)
     print("Rule deleted")
 
-def creat_rule(rule_name: str, webhook_url: str, template_guid: str, entity_guid: str, access_token: str):
+def get_user_role(entity_name: str, access_token: str) -> dict:
+    """Get first role and user guids from the IoTConnect"""
+    headers = {
+        "Authorization": access_token
+    }
+    params = {
+        "Entity": entity_name
+    }
+    response = requests.get(API_USER_URL + USER, headers = headers, params = params)
+    check_status(response)
+    response_json = response.json()
+    
+
+    user = response_json["data"][0]["guid"]
+    role = response_json["data"][0]["roleGuid"]
+
+    user_role = {
+        "user": user,
+        "role": role
+    }
+    print("user = " + user)
+    print("role = " + role)
+    return user_role
+
+def creat_rule(rule_name: str, webhook_url: str, template_guid: str, entity_guid: str, entity_name: str, access_token: str):
     """Create device in IoTConnect from given data"""
     major_guid = get_major_guid(access_token)
+    user_role = get_user_role(entity_name, access_token)
 
     data = {
         "ruleType": 1,
@@ -108,31 +135,8 @@ def creat_rule(rule_name: str, webhook_url: str, template_guid: str, entity_guid
         "deliveryMethod": ["WebHook"],
         "url": webhook_url,
         "webhookMsgFormat": 2,
-    }
-
-    headers = {
-        "Content-type": "application/json",
-        "Accept": "*/*",
-        "Authorization": access_token
-    }
-    response = requests.post(API_DEVICE_URL + RULE, json = data, headers = headers)
-
-    check_status(response)
-    rule_guid = get_rule_guid_from_response(response)
-    print(f"Rule {rule_name} created with guid {rule_guid}")
-
-    data = {
-        "ruleType": 1,
-        "templateGuid": template_guid,
-        "name": "testint",
-        "severityLevelGuid": major_guid,
-        "conditionText": 'confidence > 100',
-        "ignorePreference": False,
-        "applyTo": 1,
-        "entityGuid": entity_guid,
-        "deliveryMethod": ["WebHook"],
-        "url": webhook_url,
-        "webhookMsgFormat": 2,
+        "roles": [user_role["role"]],
+        "users": [user_role["user"]],
     }
 
     headers = {
