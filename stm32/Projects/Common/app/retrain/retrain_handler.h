@@ -57,6 +57,22 @@ RetrainHandlerStatus_t RetrainData_enqueue(const RetrainData_t* message);
 RetrainHandlerStatus_t RetrainHandler_SetBufferData(const uint8_t* data, size_t size);
 
 /**
+ * @brief Set the buffer data with an offset.
+ *
+ * This function copies provided data to the internal static buffer at the specified offset.
+ *
+ * @param[in] data Pointer to the data buffer.
+ * @param[in] size Size of the data buffer.
+ * @param[in] offset Offset in the internal buffer where the data should be copied.
+ *
+ * @return RetrainHandlerStatus_t
+ * - RETRAIN_HANDLER_OK if the buffer data was successfully set.
+ * - RETRAIN_HANDLER_ERR_INVALID_BUFFER if the input data is NULL or the buffer size is invalid.
+ * - RETRAIN_HANDLER_ERR_BUFFER_OVERFLOW if the buffer size exceeds the maximum allowed size.
+ */
+RetrainHandlerStatus_t RetrainHandler_SetBufferDataWithOffset(const uint8_t* data, size_t size, size_t offset);
+
+/**
  * @brief Enqueue the internal buffer data with classification for retraining.
  *
  * This function enqueues the buffer data along with the classification

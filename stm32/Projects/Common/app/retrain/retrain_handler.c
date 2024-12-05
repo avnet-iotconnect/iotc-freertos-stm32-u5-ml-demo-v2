@@ -136,6 +136,34 @@ RetrainHandlerStatus_t RetrainHandler_SetBufferData(const uint8_t* data, size_t 
     return RETRAIN_HANDLER_OK;
 }
 
+RetrainHandlerStatus_t RetrainHandler_SetBufferDataWithOffset(const uint8_t* data, size_t size, size_t offset) {
+    RetrainHandlerHandle_t handler = &s_default_context;
+
+    /* Check if handler is initialized */
+    if (!handler->is_initialized) {
+        LogError("Handler is not initialized");
+        return RETRAIN_HANDLER_ERR_INVALID_BUFFER;
+    }
+
+    /* Validate input data */
+    if (data == NULL) {
+        LogError("Invalid input data: NULL");
+        return RETRAIN_HANDLER_ERR_INVALID_BUFFER;
+    }
+
+    /* Validate buffer size */
+    if ((offset + size) > AUDIO_BUFFER_SIZE) {
+        LogError("Input data size exceeds audio buffer size: %d", size);
+        return RETRAIN_HANDLER_ERR_BUFFER_OVERFLOW;
+    }
+
+    /* Copy data to the audio buffer at the specified offset */
+    memcpy(&handler->audio_buffer[offset], data, size);
+    LogDebug("Buffer set at offset %lu with size %lu", offset, size);
+
+    return RETRAIN_HANDLER_OK;
+}
+
 RetrainHandlerStatus_t RetrainHandler_EnqueueBufferData(const char* classification) {
     RetrainHandlerHandle_t handler = &s_default_context;
 
