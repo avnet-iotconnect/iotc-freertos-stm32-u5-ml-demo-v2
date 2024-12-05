@@ -101,7 +101,32 @@ def creat_rule(rule_name: str, webhook_url: str, template_guid: str, entity_guid
         "templateGuid": template_guid,
         "name": rule_name,
         "severityLevelGuid": major_guid,
-        "conditionText": 'request_s3 = "True"',
+        "conditionText": 'requests3 = "True"',
+        "ignorePreference": False,
+        "applyTo": 1,
+        "entityGuid": entity_guid,
+        "deliveryMethod": ["WebHook"],
+        "url": webhook_url,
+        "webhookMsgFormat": 2,
+    }
+
+    headers = {
+        "Content-type": "application/json",
+        "Accept": "*/*",
+        "Authorization": access_token
+    }
+    response = requests.post(API_DEVICE_URL + RULE, json = data, headers = headers)
+
+    check_status(response)
+    rule_guid = get_rule_guid_from_response(response)
+    print(f"Rule {rule_name} created with guid {rule_guid}")
+
+    data = {
+        "ruleType": 1,
+        "templateGuid": template_guid,
+        "name": "testint",
+        "severityLevelGuid": major_guid,
+        "conditionText": 'confidence > 100',
         "ignorePreference": False,
         "applyTo": 1,
         "entityGuid": entity_guid,
