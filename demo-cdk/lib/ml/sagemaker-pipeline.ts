@@ -99,6 +99,7 @@ export class SagmakerPipeline extends Construct {
     });
 
     const build = new aws_codebuild.Project(this, 'MlBuild', {
+      projectName: "SagemakerPipeline",
       environment:  {
         computeType: ComputeType.X_LARGE,
         buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
@@ -255,6 +256,7 @@ export class SagmakerPipeline extends Construct {
     });
 
     const downloadBuild = new aws_codebuild.Project(this, 'DownloadBuild', {
+        projectName: "DownloadBuild",
         environment: { 
             computeType: ComputeType.LARGE,
             buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
@@ -277,11 +279,12 @@ export class SagmakerPipeline extends Construct {
     const downloadStartRole = new aws_iam.Role(this, 'WaitHandlerRole', {
         assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
         managedPolicies: [
+            aws_iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
             aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeBuildAdminAccess'),
         ],
     });
 
-    const downloadStart = new aws_lambda_nodejs.NodejsFunction(this, 'download-start', {
+    const downloadStartFn = new aws_lambda_nodejs.NodejsFunction(this, 'download-start', {
         runtime: aws_lambda.Runtime.NODEJS_18_X,
         environment: {
             projectName: downloadBuild.projectName,
@@ -295,7 +298,7 @@ export class SagmakerPipeline extends Construct {
     });
 
     new triggers.Trigger(this, 'BuildTrigger', {
-        handler: downloadStart,
+        handler: downloadStartFn,
         invocationType: triggers.InvocationType.EVENT,
         executeAfter: [downloadBuild],
     });
