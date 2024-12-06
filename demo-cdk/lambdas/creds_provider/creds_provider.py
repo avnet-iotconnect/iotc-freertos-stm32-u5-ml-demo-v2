@@ -50,19 +50,14 @@ def creds_provider_handler(event, context):
 def send_command(command_guid: str, endpoint_url: str, api_key: str, entity_guid: str, access_token: str):
     """Create device in IoTConnect from given data"""
 
-    parameter_value = {
-        S3_ENDPOINT_HEADER: endpoint_url,
-        S3_APIKEY_HEADER: api_key,
-    }
-
-    parameter_value_json = json.dumps(parameter_value) 
+    parameter_value = f"{endpoint_url.replace("https://", '')},{api_key}"
 
     data = {
         "commandGuid": command_guid,
         "entityGuid": entity_guid,
         "applyTo": 1,
         "isRecursive": False,
-        "parameterValue": parameter_value_json
+        "parameterValue": parameter_value
     }
 
     headers = {
@@ -73,7 +68,7 @@ def send_command(command_guid: str, endpoint_url: str, api_key: str, entity_guid
     response = requests.post(API_DEVICE_URL + COMMAND_SEND, json = data, headers = headers)
 
     check_status(response)
-    print(f"Command sent")
+    print(f"Command '{parameter_value}' sent")
 
 def get_rule_guid_from_response(response: requests.Response) -> str:
     """Returns template guid from the response"""

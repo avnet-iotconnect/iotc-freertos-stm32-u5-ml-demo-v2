@@ -3,6 +3,7 @@
 
 import { Construct } from 'constructs';
 import  * as cdk from 'aws-cdk-lib';
+import * as crypto from 'crypto';  // Import crypto to generate a hash for physicalResourceId
 import {
   SecretValue,
   Stack,
@@ -23,6 +24,7 @@ import {
   triggers,
   aws_ssm,
   Token,
+  custom_resources
 } from 'aws-cdk-lib';
 import { ComputeType } from 'aws-cdk-lib/aws-codebuild';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
@@ -99,6 +101,7 @@ export class SagmakerPipeline extends Construct {
     });
 
     const build = new aws_codebuild.Project(this, 'MlBuild', {
+      projectName: "SagemakerPipeline",
       environment:  {
         computeType: ComputeType.X_LARGE,
         buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
@@ -182,24 +185,6 @@ export class SagmakerPipeline extends Construct {
 
     this.retrainUrl = Token.asString(httpApi.url).slice(0, -1) + retrainPath;
 
-    // const key = new aws_kms.Key(this, 'KMS', {
-    //   removalPolicy: RemovalPolicy.DESTROY,
-    //   enableKeyRotation: true,
-    // });
-    // const mlBucketSecret = new aws_secretsmanager.Secret(this, 'MlOutputSecret', {
-    //   secretName: 'MlBucketArn',
-    //   secretStringValue: SecretValue.unsafePlainText(mlOutputBucket.bucketArn),
-    //   encryptionKey: key,
-    // });
-
-    const pushModelRole = new aws_iam.Role(this, 'PushModelRole', {
-        assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
-        managedPolicies: [
-          aws_iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
-          aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess'),
-        ],
-    });
-
     const gitOwner = this.node.tryGetContext('gitOwner');
     const gitRepo = this.node.tryGetContext('gitRepo');
     const gitArn = this.node.tryGetContext('gitArn');
@@ -265,5 +250,93 @@ export class SagmakerPipeline extends Construct {
     pushCode.role!.attachInlinePolicy(codeConnectionPolicy);
     // create the policy before the project
     (pushCode.node.defaultChild as cdk.CfnResource).addDependency(codeConnectionPolicy.node.defaultChild as cdk.CfnResource);
+
+    // Download sound data during deployment
+    const downloadEncryptionKey = new aws_kms.Key(this, 'DownloadEncryptionKey', {
+        removalPolicy: RemovalPolicy.DESTROY,
+        enableKeyRotation: true,
+    });
+
+    const downloadBuild = new aws_codebuild.Project(this, 'DownloadBuild', {
+        projectName: "DownloadBuild",
+        environment: { 
+            computeType: ComputeType.LARGE,
+            buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
+        },
+        timeout: Duration.minutes(120),
+        encryptionKey: downloadEncryptionKey,
+        environmentVariables: {
+            ARTIFACT_BUCKET: { value: dataSetsBucket.bucketName },
+        },
+        buildSpec: aws_codebuild.BuildSpec.fromAsset('lib/ml/dlbuildspec.yml'),
+        logging: {
+            cloudWatch: {
+            logGroup: new aws_logs.LogGroup(this, `DownloadBuildLogGroup`),
+            },
+        },
+    });
+
+    dataSetsBucket.grantReadWrite(downloadBuild);
+
+    const downloadStartRole = new aws_iam.Role(this, 'WaitHandlerRole', {
+        assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
+        managedPolicies: [
+            aws_iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
+            aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeBuildAdminAccess'),
+        ],
+    });
+
+    const downloadStartFn = new aws_lambda_nodejs.NodejsFunction(this, 'download-start', {
+        runtime: aws_lambda.Runtime.NODEJS_18_X,
+        environment: {
+            projectName: downloadBuild.projectName,
+        },
+        bundling: {
+            esbuildArgs: {
+              '--packages': 'bundle',
+            },
+        },
+        role: downloadStartRole,
+    });
+
+    // Grant invoke permission for the custom resource
+    downloadStartFn.grantInvoke(new aws_iam.ServicePrincipal('cloudformation.amazonaws.com'));
+
+    // Generate a hash of the Lambda code or environment variables to use as a physical resource ID
+    const functionVersionHash = crypto.createHash('sha256')
+    .update(downloadStartFn.functionArn)  // You can also add other dynamic values here
+    .digest('hex');
+
+    const downloadStartFnCustomResource = new custom_resources.AwsCustomResource(this, 'DownloadStartFnCustomResource', {
+        onCreate: {
+            service: 'Lambda',
+            action: 'invoke',
+            parameters: {
+                FunctionName: downloadStartFn.functionName,
+                InvocationType: 'RequestResponse',
+            },
+            physicalResourceId: custom_resources.PhysicalResourceId.of(functionVersionHash),
+        },
+        onUpdate: {  // Ensure the Lambda is invoked on updates as well
+            service: 'Lambda',
+            action: 'invoke',
+            parameters: {
+              FunctionName: downloadStartFn.functionName,
+              InvocationType: 'RequestResponse',
+            },
+            physicalResourceId: custom_resources.PhysicalResourceId.of(functionVersionHash),
+        },
+        // Define an explicit policy that allows invoking the Lambda function
+        policy: custom_resources.AwsCustomResourcePolicy.fromStatements([
+            new aws_iam.PolicyStatement({
+            actions: ['lambda:InvokeFunction'],
+            effect: aws_iam.Effect.ALLOW,
+            resources: [downloadStartFn.functionArn],
+            }),
+        ]),
+        resourceType: 'Custom::DownloadStartFnCustomResourceAction',
+    });
+
+    downloadStartFnCustomResource.node.addDependency(downloadBuild);
   }
 }

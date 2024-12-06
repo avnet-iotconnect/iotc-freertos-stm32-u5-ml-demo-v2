@@ -25,8 +25,8 @@
             "aggregateTypes": []
         },
         {
-            "name": "request_s3",
-            "type": "BOOLEAN",
+            "name": "requests3",
+            "type": "STRING",
             "description": "",
             "unit": "",
             "aggregateTypes": []
@@ -36,6 +36,13 @@
         {
             "name": "S3 credentials",
             "command": "creds_s3",
+            "requiredParam": true,
+            "requiredAck": false,
+            "isOTACommand": false
+        },
+        {
+            "name": "Start ML retraining process",
+            "command": "retrain",
             "requiredParam": true,
             "requiredAck": false,
             "isOTACommand": false

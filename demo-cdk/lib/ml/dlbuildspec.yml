@@ -1,0 +1,58 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - aws s3api head-object --bucket ${ARTIFACT_BUCKET} --key train/datasets/FSD50K/FSD50K.ground_truth/dev.csv || NOT_EXIST=true
+      - |
+        if [ $NOT_EXIST ]; then
+          echo "Downloading FSD50K Dataset..." ;
+
+          echo "Downloading Dev Audio..." ;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z01 -q;
+          echo "1 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z02 -q;
+          echo "2 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z03 -q;
+          echo "3 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z04 -q;
+          echo "4 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.z05 -q;
+          echo "5 loaded";
+          df -h;
+          wget https://zenodo.org/records/4060432/files/FSD50K.dev_audio.zip -q;
+          echo "6 loaded";
+          df -h;
+          zip -q -s 0 FSD50K.dev_audio.zip --out FSD50K.dev_audio-unsplit.zip;
+
+          df -h;
+          echo "Downloading Eval Audio..." ;
+          wget https://zenodo.org/records/4060432/files/FSD50K.eval_audio.z01 -q;
+          wget https://zenodo.org/records/4060432/files/FSD50K.eval_audio.zip -q;
+          zip -q -s 0 FSD50K.eval_audio.zip --out FSD50K.eval_audio-unsplit.zip;
+
+          df -h;
+          echo "Downloading Ground Truth..." ;
+          wget https://zenodo.org/records/4060432/files/FSD50K.ground_truth.zip -q;
+
+          df -h;
+          echo "Unziping..." ;
+          mkdir temp;
+          unzip -q FSD50K.ground_truth.zip -d temp/;
+          rm FSD50K.ground_truth.zip;
+          df -h;
+          unzip -q FSD50K.eval_audio-unsplit.zip -d temp/;
+          rm FSD50K.eval_audio-unsplit.zip;
+          df -h;
+          
+          unzip -q FSD50K.dev_audio-unsplit.zip -d temp/;
+          rm FSD50K.dev_audio-unsplit.zip;
+          df -h;
+
+          echo "Uploading..." ;
+          aws s3 cp temp s3://${ARTIFACT_BUCKET}/train/datasets/FSD50K/ --recursive --quiet;
+        fi
