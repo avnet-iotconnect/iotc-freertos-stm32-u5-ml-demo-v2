@@ -274,54 +274,28 @@ export class SagmakerPipeline extends Construct {
 
     dataSetsBucket.grantReadWrite(downloadBuild);
 
-    const param = new aws_ssm.StringParameter(this, 'StringParameter', {
-        stringValue: '0',
-    });
-
-    const waitHandlerRole = new aws_iam.Role(this, 'WaitHandlerRole', {
+    const downloadStartRole = new aws_iam.Role(this, 'WaitHandlerRole', {
         assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
         managedPolicies: [
-            aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMFullAccess'),
             aws_iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeBuildAdminAccess'),
         ],
     });
 
-    const { ref: waitCompletionUrl } = new aws_cloudformation.CfnWaitConditionHandle(
-        this,
-        'CfnWaitConditionHandle' + Date.now()
-    );
-
-    const waitHandler = new aws_lambda_nodejs.NodejsFunction(this, 'wait-handler', {
+    const downloadStart = new aws_lambda_nodejs.NodejsFunction(this, 'download-start', {
         runtime: aws_lambda.Runtime.NODEJS_18_X,
         environment: {
-            assetHash: mlOpsCode.assetHash,
-            paramName: param.parameterName,
             projectName: downloadBuild.projectName,
-            runEveryTime: Date.now().toString(),
         },
         bundling: {
             esbuildArgs: {
               '--packages': 'bundle',
             },
         },
-        role: waitHandlerRole,
-    });
-
-    new aws_cloudformation.CfnWaitCondition(this, 'CfnWaitCondition' + Date.now(), {
-        handle: waitCompletionUrl,
-        timeout: '7200',
-        count: 1,
-    });
-
-    downloadBuild.onBuildSucceeded('BuildSucceed', {
-        target: new aws_events_targets.LambdaFunction(waitHandler),
-    });
-    downloadBuild.onBuildFailed('BuildFail', {
-        target: new aws_events_targets.LambdaFunction(waitHandler),
+        role: downloadStartRole,
     });
 
     new triggers.Trigger(this, 'BuildTrigger', {
-        handler: waitHandler,
+        handler: downloadStart,
         invocationType: triggers.InvocationType.EVENT,
         executeAfter: [downloadBuild],
     });
