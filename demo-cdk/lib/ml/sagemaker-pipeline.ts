@@ -3,6 +3,7 @@
 
 import { Construct } from 'constructs';
 import  * as cdk from 'aws-cdk-lib';
+import * as crypto from 'crypto';  // Import crypto to generate a hash for physicalResourceId
 import {
   SecretValue,
   Stack,
@@ -23,6 +24,7 @@ import {
   triggers,
   aws_ssm,
   Token,
+  custom_resources
 } from 'aws-cdk-lib';
 import { ComputeType } from 'aws-cdk-lib/aws-codebuild';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
@@ -297,10 +299,44 @@ export class SagmakerPipeline extends Construct {
         role: downloadStartRole,
     });
 
-    new triggers.Trigger(this, 'BuildTrigger', {
-        handler: downloadStartFn,
-        invocationType: triggers.InvocationType.EVENT,
-        executeAfter: [downloadBuild],
+    // Grant invoke permission for the custom resource
+    downloadStartFn.grantInvoke(new aws_iam.ServicePrincipal('cloudformation.amazonaws.com'));
+
+    // Generate a hash of the Lambda code or environment variables to use as a physical resource ID
+    const functionVersionHash = crypto.createHash('sha256')
+    .update(downloadStartFn.functionArn)  // You can also add other dynamic values here
+    .digest('hex');
+
+    const downloadStartFnCustomResource = new custom_resources.AwsCustomResource(this, 'DownloadStartFnCustomResource', {
+        onCreate: {
+            service: 'Lambda',
+            action: 'invoke',
+            parameters: {
+                FunctionName: downloadStartFn.functionName,
+                InvocationType: 'RequestResponse',
+            },
+            physicalResourceId: custom_resources.PhysicalResourceId.of(functionVersionHash),
+        },
+        onUpdate: {  // Ensure the Lambda is invoked on updates as well
+            service: 'Lambda',
+            action: 'invoke',
+            parameters: {
+              FunctionName: downloadStartFn.functionName,
+              InvocationType: 'RequestResponse',
+            },
+            physicalResourceId: custom_resources.PhysicalResourceId.of(functionVersionHash),
+        },
+        // Define an explicit policy that allows invoking the Lambda function
+        policy: custom_resources.AwsCustomResourcePolicy.fromStatements([
+            new aws_iam.PolicyStatement({
+            actions: ['lambda:InvokeFunction'],
+            effect: aws_iam.Effect.ALLOW,
+            resources: [downloadStartFn.functionArn],
+            }),
+        ]),
+        resourceType: 'Custom::DownloadStartFnCustomResourceAction',
     });
+
+    downloadStartFnCustomResource.node.addDependency(downloadBuild);
   }
 }
