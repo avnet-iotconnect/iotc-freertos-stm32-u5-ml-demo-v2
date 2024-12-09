@@ -8,7 +8,7 @@ While the foundation of the technology can support the classification of events 
 
 This guide outlines the steps to recreate the demo.
 
-## Deployment
+## Deployment Prerequisites
 
 The project is built using GitHub actions, CDK IaC and IoTConnect REST API. So it can be deployed to your AWS account directly from the GitHub.
 
@@ -237,4 +237,102 @@ In GitHub repository go to Settings -> Secrets and variables -> Actions and fill
 - STDEVCLOUD_USERNAME: your login for [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home) account
 
 <img src="media/GitHub/secrets.png" alt="drawing"/>
+
+## Deployment
+
+### CDK Bootstrap
+
+The deploy should start from the CDK bootstrap. In repository go to Actions -> Bootstrap CDK. Press on the "Run workflow" dropdown, choose main branch and press "Run workflow".
+
+<img src="media/GitHub/bootstrap.png" alt="drawing"/>
+
+Wait till the action is finished.
+
+<img src="media/GitHub/bootstrap-finished.png" alt="drawing"/>
+
+#### Troubleshooting
+
+If action is failed most likely credentials in secrets are wrong or policy created previously is wrong. AWS sometimes update permissions list needed for the CDK bootstrap. You can avoid this issue by changing the policy to allow all possible action on all possible resources - but keep in mind that it is not good practise.
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": {
+    "Effect": "Allow",
+    "Action": "*",
+    "Resource": "*"
+  }
+}
+```
+
+### Deploy
+
+Now the solution could be deployed.
+
+In repository go to Actions -> Solution Deploy. Press on the "Run workflow" dropdown, choose main branch and press "Run workflow".
+
+This action will deploy infrastructure to the AWS and IoTConnect.
+
+<img src="media/GitHub/deploy.png" alt="drawing"/>
+
+Wait till the action is finished.
+
+<img src="media/GitHub/deploy-finished.png" alt="drawing"/>
+
+Ater action is successfuly finished, the audio files download process will be automatically started in the AWS. You can't start retraining process before this process is finished. It usually takes from 30 to 60 minutes. To check the downloading progress, you can go in CodeBuild in AWS.
+
+<img src="media/AWS/aws-codebuild.png" alt="drawing"/>
+
+Go to "Build projects" and press on the "DownloadBuild" project.
+
+<img src="media/AWS/download-build.png" alt="drawing"/>
+
+Press on the build run which is "in Progress"
+
+<img src="media/AWS/download-in-progress.png" alt="drawing"/>
+
+You will see the downloading log. The process order:
+
+1. Downloading Dev Audio (6 parts)
+2. Downloading Eval Audio
+3. Downloading Ground Truth
+4. Unzipping
+5. Uploading to S3
+
+When you will see in the log "Phase complete: BUILD State: SUCCEEDED" - the files are in S3, which means that you can start the retraining.
+
+### Configuring Device Connection Parameters
+
+Now it is necessary to configure the Device Connection Parameters. In IoTConnect go to the device Info tab
+
+<img src="media/IoTConnect/device.png" alt="drawing"/>
+
+Go to the Devices and press on the "soundclass" device.
+
+<img src="media/IoTConnect/device-soundclass.png" alt="drawing"/>
+
+Press on the "Connection info".
+
+<img src="media/IoTConnect/connection-info.png" alt="drawing"/>
+
+Note the following values in the device Connection info screen which we will use for the device runtime configuration in the next steps:
+
+- Your Unique Device ID that you used to create the device will be used as thing_name.
+- Host, which will be used for the mqtt_endpoint value.
+
+<img src="media/IoTConnect/connection-info-screen.png" alt="drawing"/>
+
+- Enter the following commands on the serial terminal to configure the MQTT connection:
+  - conf set thing_name your-device-id
+    - To take advantage of the GPS location feature, the user should assign their device one of the following names to correspond with a unique GPS location: ml-ai-demo-01, ml-ai-demo-02, ml-ai-demo-03, or ml-ai-demo-04.
+  - conf set mqtt_endpoint your-endpoint
+  - conf set mqtt_port 8883
+- Enter the following commands to set up the WiFi connection for your device:
+  - conf set wifi_ssid your-wifi-ssid
+  - conf set wifi_credential your-wifi-password
+- Verify values by entering the **conf get** command and examining the output.
+- Enter **conf commit**. Note that must commit the changes so that they take effect.
+- Enter **reset** to reset the device.
+
+The device should connect at this point, and you should be able to see data in the Telemetry and Latest Value tabs in IoTConnect.
 
