@@ -25,6 +25,13 @@ jobs:
           mkdir ../iot-connect/ota
           cp Projects/b_u585i_iot02a_ntz/Debug/b_u585i_iot02a_ntz.bin ../iot-connect/ota/fw.iso
 
+      - name: FW artifact upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: fw.bin
+          path: stm32/Projects/b_u585i_iot02a_ntz/Debug/b_u585i_iot02a_ntz.bin
+          retention-days: 2
+
       - name: Setup python environment
         uses: actions/setup-python@v5
         with:
