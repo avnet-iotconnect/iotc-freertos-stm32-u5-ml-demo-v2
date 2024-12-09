@@ -16,10 +16,14 @@ The project is built using GitHub actions, CDK IaC and IoTConnect REST API. So i
 
 ### AWS Setup
 
+#### GitHub Connection
+
 It is necessary to set up a connection between the pipeline and your forked Repo
 
 1. Follow the steps to create & verify the connection [here](https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html)
-2. Copy created Connection Arn. We will need it during the GitHub Secrets setup.
+2. Copy created Connection Arn. We will need it during the GitHub Secrets setup
+
+#### Credentials
 
 Now lets create AWS Credentials. In AWS go to IAM Service.
 
@@ -124,12 +128,65 @@ Start with creating the Policy.
 
    <img src="media/AWS/policy-permissions.png" alt="drawing"/>
 
-3. Name the policy "CDK_Deploy" and press "Create policy".
+3. Give the policy a name, e.g. "CDK_Deploy", and press "Create policy"
    <img src="media/AWS/policy-name.png" alt="drawing"/>
 
 Now create the user group
 
-1. tbd
+1. In IAM go to User groups and press "Create group"
+   <img src="media/AWS/press-create-group.png" alt="drawing"/>
+2. Give group a name, e.g. "CDK_Deploy" and in "Attach permissions policies" find and check the polucy you created earlier
+   <img src="media/AWS/group.png" alt="drawing"/>
+3. Press "Create user group"
+
+Now create the user
+
+1. In IAM go to Users and press "Create user"
+   <img src="media/AWS/press-create-user.png" alt="drawing"/>
+2. Give user a name, e.g. "cdk-deploy" and press "Next"
+   <img src="media/AWS/user-name.png" alt="drawing"/>
+3. On the next step find a check the group you previously created, press "Next"
+   <img src="media/AWS/user-add-group.png" alt="drawing"/>
+4. On the next step press "Create user"
+   <img src="media/AWS/user-create.png" alt="drawing"/>
+
+Now create an access key and a secret access key for the new user.
+
+1. In IAM go to Users and press on the prebiously created user
+   <img src="media/AWS/new-user.png" alt="drawing"/>
+2. Go to Security credentials and press "Create access key"
+   <img src="media/AWS/press-create-key.png" alt="drawing"/>
+3. Choose "Command Line Interface (CLI)" Use case, check the confirmation and press "Next"
+   <img src="media/AWS/key-use-case.png" alt="drawing"/>
+4. Fill the Description tag value if you want and press "Create access key"
+   <img src="media/AWS/key-create.png" alt="drawing"/>
+5. Copy and save both "Access key" and "Secret access key", you will need them later and press "Done"
+   <img src="media/AWS/key-copy.png" alt="drawing"/>
+
+### ST Account Setup
+
+ST Cloud credentials:
+
+- Create an account in [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home)
+- Login and accept an agreement
+- Copy login and password, you will need them later
+
+### IoTConnect Setup
+
+You should have account in Avnet IoTConnect powered by AWS. Retreive the following things from IoTConnect account:
+
+- Solution key
+- Login
+- Password
+- Entity name
+
+Uou will need it later.
+
+If you don't have the solution key - in IoT Connect go to Support Ticket -> Other Support and create ticket with title "Please, create the solution key" and description "Hello! We need to use REST API for our solution. Can you, please, create the solution key?" and press "Save". Support team will create the solution key for you.
+
+<img src="media/IoTConnect/create-ticket.png" alt="drawing"/>
+
+<img src="media/IoTConnect/save-ticket.png" alt="drawing"/>
 
 ### Firmware Flashing and Getting Certificate
 
@@ -162,6 +219,22 @@ Now create the user group
 
 ### Credentials Preparation
 
-Before the solution can be deployed to the cloud it is necessary to gather credentials and provide it into the GitHub secrets.
+Before the solution can be deployed to the cloud it is necessary to provide the credentials into the GitHub secrets.
 
-#### AWS
+In GitHub repository go to Settings -> Secrets and variables -> Actions and fill the secret values:
+
+- AWS_ACCESS_KEY: AWS access key you previously
+- AWS_ACCOUNT_NUMBER: AWS account number
+- AWS_REGION: AWS region in which you want to deploy the demo
+- AWS_SECRET_ACCESS_KEY: AWS secret access key you previously
+- GIT_ARN: ARN of the GitHub connection in the AWS
+- IOT_CONNECT_CERTIFICATE: the certificate you captured from the device
+- IOT_CONNECT_ENTITY_NAME: your Entity name in the IoTConnect account
+- IOT_CONNECT_PASSWORD: your password for IoTConnect account
+- IOT_CONNECT_SOLUTION_KEY: your solution key in the IoTConnect account
+- IOT_CONNECT_USERNAME: your login for IoTConnect account
+- STDEVCLOUD_PASSWORD: your password for [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home) account
+- STDEVCLOUD_USERNAME: your login for [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home) account
+
+<img src="media/GitHub/secrets.png" alt="drawing"/>
+
