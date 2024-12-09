@@ -153,7 +153,7 @@ static bool is_dma_cplt_event(uint32_t notifiedValue);
  * @param max_values The maximum number of values to parse.
  * @return The number of items found.
  */
-static int parse_csv_values(const char *payload, const char **values, size_t *lengths, size_t max_values);
+static uint32_t parse_csv_values(const char *payload, const char **values, uint32_t *lengths, uint32_t max_values);
 
 /**
  * @brief Strips provided symbols from the payload at the endings.
@@ -401,11 +401,13 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
 		if (scan_command_number_arg(payload, RETRAIN_CMD, &retrain_cmd_arg)) {
 			LogInfo("Retrain command received: %d", retrain_cmd_arg);
 			
-			const char * classification = RetrainHandler_GetClassName(retrain_cmd_arg);
+			const char * classification = RetrainHandler_GetClassName((uint8_t)retrain_cmd_arg);
 
-			if(classification)
-				if(RetrainHandler_EnqueueBufferData(classification) == RETRAIN_HANDLER_OK)
+			if(classification){
+				if(RetrainHandler_EnqueueBufferData(classification) == RETRAIN_HANDLER_OK){
 					LogDebug("Retrain data enqueued successfully");
+				}
+			}
 			else
 				LogError("Failed to retrieve classification argument: %d", retrain_cmd_arg);
 			
@@ -420,7 +422,7 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
         const char *values[KEYS_NUM];
         // Symbols to be stripped from the arguments
         char symbols[] = {'"', ' ', '{', '}'};
-        const char* args = NULL;
+        char* args = NULL;
         
         // Find the S3 credentials command in the payload and move the pointer to the arguments
         args = strstr(payload, S3_CREDS_CMD) + strlen(S3_CREDS_CMD);
@@ -428,7 +430,7 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
         args = strip_symbols(args, symbols, sizeof(symbols));
 
         // Parse the CSV values from the arguments
-        int count = parse_csv_values(args, values, length, KEYS_NUM);
+        uint32_t count = parse_csv_values((const char *)args, values, length, KEYS_NUM);
         if (count == KEYS_NUM) {
             LogInfo("Received new S3 credentials");
 
@@ -437,8 +439,8 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
             char api_key_buffer[length[API_KEY] + 1];
 
             // Copy the parsed values into the buffers
-            sprintf(endpoint_buffer, "%.*s", length[ENDPOINT_KEY], values[ENDPOINT_KEY]);
-            sprintf(api_key_buffer, "%.*s", length[API_KEY], values[API_KEY]);
+            sprintf(endpoint_buffer, "%.*s", (int)length[ENDPOINT_KEY], values[ENDPOINT_KEY]);
+            sprintf(api_key_buffer, "%.*s", (int)length[API_KEY], values[API_KEY]);
 
             // Store the new credentials in the key-value store
             KVStore_setString(CS_S3_ENDPOINT, endpoint_buffer);
@@ -499,15 +501,15 @@ static bool is_dma_cplt_event(uint32_t notifiedValue) {
     return (notifiedValue & MIC_EVT_DMA_CPLT) != 0;
 }
 
-static int parse_csv_values(const char *payload, const char **values, size_t *lengths, size_t max_values) {
-    size_t count = 0; // Initialize count of parsed values
+static uint32_t parse_csv_values(const char *payload, const char **values, uint32_t *lengths, uint32_t max_values) {
+    uint32_t count = 0; // Initialize count of parsed values
     const char *start = payload; // Pointer to the start of the current value
     const char *end = NULL; // Pointer to the end of the current value
 
     // Loop to parse values separated by commas
     while (count < max_values && (end = strchr(start, ',')) != NULL) {
         values[count] = start; // Store the start of the value
-        lengths[count] = end - start; // Calculate and store the length of the value
+        lengths[count] = (size_t)(end - start); // Calculate and store the length of the value
         count++; // Increment the count of parsed values
         start = end + 1; // Move the start pointer to the next value
     }

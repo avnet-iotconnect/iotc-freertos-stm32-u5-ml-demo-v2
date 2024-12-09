@@ -128,7 +128,7 @@ static bool parseHostAndPath(const char *input, const char **hostname, size_t *h
     {
         // If a path is found, update the hostname length and set the path pointers
         *hostname = input;
-        *hostnameLen = pathStart - input;
+        *hostnameLen = (size_t)(pathStart - input);
         *path = pathStart;
         *pathLen = strlen(pathStart);
         return true;

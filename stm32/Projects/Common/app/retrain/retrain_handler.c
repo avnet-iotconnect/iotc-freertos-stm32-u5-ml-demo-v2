@@ -383,10 +383,10 @@ void vRetrainProcessingTask(void* pvParameters) {
 
                 if (xIsMqttConnected() == pdTRUE) 
                 {   	
-                    uint32_t bytesWritten;
+                    int bytesWritten;
                     char payloadBuf[512];
                     MQTTAgentHandle_t xAgentHandle = xGetMqttAgentHandle();
-                    BaseType_t xResult;
+                    BaseType_t xResult = pdFALSE;
 
                     bytesWritten = snprintf( payloadBuf,
                                 512,
@@ -397,7 +397,7 @@ void vRetrainProcessingTask(void* pvParameters) {
                         xResult = prvPublishAndWaitForAck(xAgentHandle,
                                                         pcTopicString,
                                                         payloadBuf,
-                                                        bytesWritten
+                                                        (size_t)bytesWritten
                     );
                     } else if (bytesWritten > 0) {
                         LogError("Not enough buffer space.");
