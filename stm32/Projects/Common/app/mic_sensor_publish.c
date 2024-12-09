@@ -140,6 +140,33 @@ static bool is_dma_half_event(uint32_t notifiedValue);
  * @return `true` if the `MIC_EVT_DMA_CPLT` flag is set, `false` otherwise.
  */
 static bool is_dma_cplt_event(uint32_t notifiedValue);
+
+/**
+ * @brief Parses the payload to find comma-separated values.
+ *
+ * This function parses the given payload to find comma-separated values and returns
+ * a pointer to them with their lengths. It also returns the number of items found.
+ *
+ * @param payload The payload to parse.
+ * @param values An array of pointers to store the start of each value.
+ * @param lengths An array to store the length of each value.
+ * @param max_values The maximum number of values to parse.
+ * @return The number of items found.
+ */
+static int parse_csv_values(const char *payload, const char **values, size_t *lengths, size_t max_values);
+
+/**
+ * @brief Strips provided symbols from the payload at the endings.
+ *
+ * This function manipulates the start pointer and null terminator symbol
+ * to strip the specified symbols from the beginning and end of the payload.
+ *
+ * @param payload The payload to strip symbols from.
+ * @param symbols The array of symbols to strip.
+ * @param num_symbols The number of symbols in the array.
+ * @return The stripped payload.
+ */
+static char* strip_symbols(char *payload, const char symbols[], uint32_t num_symbols);
 /*-----------------------------------------------------------*/
 static void prvPublishCommandCallback(MQTTAgentCommandContext_t *pxCommandContext,
 									  MQTTAgentReturnInfo_t *pxReturnInfo)
@@ -433,6 +460,66 @@ static bool is_dma_half_event(uint32_t notifiedValue) {
 
 static bool is_dma_cplt_event(uint32_t notifiedValue) {
     return (notifiedValue & MIC_EVT_DMA_CPLT) != 0;
+}
+
+static int parse_csv_values(const char *payload, const char **values, size_t *lengths, size_t max_values) {
+    size_t count = 0; // Initialize count of parsed values
+    const char *start = payload; // Pointer to the start of the current value
+    const char *end = NULL; // Pointer to the end of the current value
+
+    // Loop to parse values separated by commas
+    while (count < max_values && (end = strchr(start, ',')) != NULL) {
+        values[count] = start; // Store the start of the value
+        lengths[count] = end - start; // Calculate and store the length of the value
+        count++; // Increment the count of parsed values
+        start = end + 1; // Move the start pointer to the next value
+    }
+
+    // Handle the last value if it exists and is not empty
+    if (count < max_values && *start != '\0') {
+        values[count] = start; // Store the start of the last value
+        lengths[count] = strlen(start); // Calculate and store the length of the last value
+        count++; // Increment the count of parsed values
+    }
+
+    return count; // Return the number of parsed values
+}
+
+static char* strip_symbols(char *payload, const char symbols[], uint32_t num_symbols) {
+    
+    // Strip symbols from the beginning of the payload
+    while (*payload) {
+        bool found = false;
+        for (uint32_t i = 0; i < num_symbols; i++) {
+            if (*payload == symbols[i]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            break;
+        }
+        payload++; // Move to the next character
+    }
+
+    // Strip symbols from the end of the payload
+    char *end = payload + strlen(payload) - 1;
+    while (end > payload) {
+        bool found = false;
+        for (uint32_t i = 0; i < num_symbols; i++) {
+            if (*end == symbols[i]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            break;
+        }
+        *end = '\0';
+        end--; // Move to the previous character
+    }
+
+    return payload; // Return the stripped payload
 }
 
 void vMicSensorPublishTask(void *pvParameters)
