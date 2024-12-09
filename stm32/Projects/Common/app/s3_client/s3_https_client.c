@@ -97,7 +97,44 @@ static uint8_t headersBuffer[HEADERS_BUFFER_SIZE];
 
 /* ============================ Static Function Declarations ============================ */
 
+/**
+ * @brief Parses the input URL to separate the hostname and path.
+ *
+ * This function takes an input URL string and separates it into the hostname and path components.
+ * It updates the provided pointers to point to the respective parts of the input string.
+ *
+ * @param[in] input The input URL string to be parsed.
+ * @param[out] hostname Pointer to the start of the hostname in the input string.
+ * @param[out] hostnameLen Length of the hostname.
+ * @param[out] path Pointer to the start of the path in the input string.
+ * @param[out] pathLen Length of the path.
+ *
+ * @return true if the input string contains a path and it was separated, false otherwise.
+ */
+static bool parseHostAndPath(const char *input, const char **hostname, size_t *hostnameLen, const char **path, size_t *pathLen);
 /* ============================ Function Implementations ============================ */
+
+static bool parseHostAndPath(const char *input, const char **hostname, size_t *hostnameLen, const char **path, size_t *pathLen)
+{
+    // Set the hostname to the input string and calculate its length
+    *hostname = input;
+    *hostnameLen = strlen(input);
+    
+    // Find the start of the path in the input string
+    const char *pathStart = strchr(input, '/');
+    
+    if (pathStart != NULL)
+    {
+        // If a path is found, update the hostname length and set the path pointers
+        *hostname = input;
+        *hostnameLen = pathStart - input;
+        *path = pathStart;
+        *pathLen = strlen(pathStart);
+        return true;
+    }
+    
+    return false;
+}
 
 int S3Client_Init(void)
 {
