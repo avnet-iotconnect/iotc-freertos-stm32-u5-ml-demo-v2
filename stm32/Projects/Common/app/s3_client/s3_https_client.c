@@ -43,9 +43,7 @@
 #define MAX_CUSTOM_HEADERS 10       
 
 /* AWS S3 Configuration */
-#define S3_HOSTNAME "u1cmgbltr6.execute-api.us-east-2.amazonaws.com"   /**< AWS S3 Hostname */
 #define S3_HTTPS_PORT 443                /**< AWS S3 HTTPS Port */
-#define S3_OBJECT_KEY "receive_file"   /**< AWS S3 Object Key */
 
 /* Root CA Certificate for AWS S3 (STARFIELD_ROOT_CA_G2) */
 #define STARFIELD_ROOT_CA_G2 \
@@ -81,6 +79,9 @@
 
 /* Uncomment the following line to enable dumping of HTTP response */
 #define ENABLE_RESPONSE_DUMP
+
+/* Maximum hostname length */
+#define MAX_HOSTNAME_LEN 255
 
 /* ============================ Static Variables ============================ */
 
@@ -149,9 +150,26 @@ int S3Client_Init(void)
     return S3_CLIENT_SUCCESS;
 }
 
-int S3Client_Connect(void)
-
+int S3Client_Connect(const char *hostnameWithPath)
 {
+    const char *hostname = NULL;
+    const char *path = NULL;
+    size_t hostnameLen = 0;
+    size_t pathLen = 0;
+    char hostnameBuffer[MAX_HOSTNAME_LEN] = {0};
+
+    parseHostAndPath(hostnameWithPath, &hostname, &hostnameLen, &path, &pathLen);
+
+    // We have to copy hostname to hostnameBuffer, because mbedtls_transport_connect expects null-terminated string
+    if (hostnameLen >= MAX_HOSTNAME_LEN)
+    {
+        LogError("Hostname length exceeds maximum allowed length of %d. Please ensure the hostname is within the allowed limit or extend the buffer.", MAX_HOSTNAME_LEN);
+        return S3_CLIENT_INVALID_PARAM; // Return error code for invalid parameter
+    }
+
+    // Copy hostname to a buffer to ensure it is null-terminated
+    snprintf(hostnameBuffer, sizeof(hostnameBuffer), "%.*s", (int)hostnameLen, hostname);
+
     LogInfo("Attempting to establish connection to AWS S3.");
 
     TlsTransportStatus_t tlsTransportStatus;
@@ -191,11 +209,11 @@ int S3Client_Connect(void)
     LogDebug("TLS transport configured successfully.");
 
     /* Establish the TLS connection to AWS S3 */
-    LogInfo("Connecting to AWS S3 at %s:%d.", S3_HOSTNAME, S3_HTTPS_PORT);
-    tlsTransportStatus = mbedtls_transport_connect(ptrNetworkContext, S3_HOSTNAME, S3_HTTPS_PORT, 10000, 10000);
+    LogInfo("Connecting to AWS S3 at %s:%d.", hostnameBuffer, S3_HTTPS_PORT);
+    tlsTransportStatus = mbedtls_transport_connect(ptrNetworkContext, hostnameBuffer, S3_HTTPS_PORT, 10000, 10000);
     if (tlsTransportStatus != TLS_TRANSPORT_SUCCESS)
     {
-        LogError("Failed to connect to AWS S3! Error Code: %d", tlsTransportStatus);
+        LogError("Failed to connect to AWS S3! Error Code: %d. Please check your network connection and AWS S3 endpoint.", tlsTransportStatus);
         mbedtls_transport_free(ptrNetworkContext);
         return S3_CLIENT_NETWORK_ERROR; // Return network specific error code
     }
@@ -211,11 +229,18 @@ int S3Client_Connect(void)
     return S3_CLIENT_SUCCESS; // Return success code
 }
 
-int S3Client_Post(const char *payload, 
+int S3Client_Post(const char *hostnameWithPath, const char *payload, 
                         uint32_t payloadLength, 
                         HTTPCustomHeader_t* userHeaders, 
                         uint8_t headerCount)
 {
+    const char *hostname = NULL;
+    const char *path = NULL;
+    size_t hostnameLen = 0;
+    size_t pathLen = 0;
+
+    bool separated = parseHostAndPath(hostnameWithPath, &hostname, &hostnameLen, &path, &pathLen);
+
     /* Initial logging and parameter validation */
     LogInfo("Initiating S3 Object Upload");
     LogDebug("Upload Parameters:");
@@ -246,10 +271,10 @@ int S3Client_Post(const char *payload,
     
     /* Configure initial request headers */
     HTTPRequestInfo_t requestInfo = {0};
-    requestInfo.pHost = S3_HOSTNAME;
-    requestInfo.hostLen = strlen(S3_HOSTNAME);
-    requestInfo.pPath = "/" S3_OBJECT_KEY;
-    requestInfo.pathLen = strlen(requestInfo.pPath);
+    requestInfo.pHost = hostname;
+    requestInfo.hostLen = hostnameLen;
+    requestInfo.pPath = (separated ? path : "/");
+    requestInfo.pathLen = (separated ? pathLen : 1);
     requestInfo.pMethod = HTTP_METHOD_POST;
     requestInfo.methodLen = strlen(HTTP_METHOD_POST);
     requestInfo.reqFlags = HTTP_REQUEST_KEEP_ALIVE_FLAG;
