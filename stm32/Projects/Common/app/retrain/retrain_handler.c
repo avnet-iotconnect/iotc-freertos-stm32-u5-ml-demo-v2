@@ -15,6 +15,35 @@
 #include "retrain_handler.h"
 #include "app/s3_client/s3_https_client.h"
 #include "ai_model_config.h"
+#include "kvstore.h"
+
+/* MQTT library includes. */
+#include "core_mqtt.h"
+#include "core_mqtt_agent.h"
+#include "subscription_manager.h"
+#include "mqtt_agent_task.h"
+#include "sys_evt.h"
+
+#define MQTT_PUBLISH_MAX_LEN (512)
+#define MQTT_PUBLISH_TIME_BETWEEN_MS (5000)
+#define MQTT_PUBLISH_TOPIC "mic_sensor_data"
+#define MQTT_PUBLICH_TOPIC_STR_LEN (256)
+#define IOTC_CD_MAX_LEN (10)
+#define MQTT_PUBLISH_BLOCK_TIME_MS (1000)
+#define MQTT_PUBLISH_NOTIFICATION_WAIT_MS (1000)
+
+#define MQTT_NOTIFY_IDX (1)
+#define MQTT_PUBLISH_QOS (MQTTQoS0)
+
+/**
+ * @brief Defines the structure to use as the command callback context in this
+ * demo.
+ */
+struct MQTTAgentCommandContext
+{
+	MQTTStatus_t xReturnStatus;
+	TaskHandle_t xTaskToNotify;
+};
 
 /* ============================ Constants and Macros ============================ */
 
@@ -30,6 +59,8 @@
 /* Content type for audio data */
 #define CONTENT_TYPE_AUDIO "audio/wav"
 
+#define S3_API_KEY_LEN 255
+#define S3_ENDPOINT_LEN 255
 /* ============================ Static Variables ============================ */
 
 /* Internal context structure */
@@ -131,7 +162,6 @@ RetrainHandlerStatus_t RetrainHandler_SetBufferData(const uint8_t* data, size_t 
 
     /* Copy data to the audio buffer */
     memcpy(handler->audio_buffer, data, size);
-    LogDebug("Audio buffer set successfully");
 
     return RETRAIN_HANDLER_OK;
 }
@@ -199,12 +229,116 @@ RetrainHandlerStatus_t RetrainHandler_EnqueueBufferData(const char* classificati
 
     return enqueue_status;
 }
+/*-----------------------------------------------------------*/
+static void prvPublishCommandCallback(MQTTAgentCommandContext_t *pxCommandContext,
+									  MQTTAgentReturnInfo_t *pxReturnInfo)
+{
+	configASSERT(pxCommandContext != NULL);
+	configASSERT(pxReturnInfo != NULL);
+
+	pxCommandContext->xReturnStatus = pxReturnInfo->returnCode;
+
+	if (pxCommandContext->xTaskToNotify != NULL)
+	{
+		/* Send the context's ulNotificationValue as the notification value so
+		 * the receiving task can check the value it set in the context matches
+		 * the value it receives in the notification. */
+		(void)xTaskNotifyGiveIndexed(pxCommandContext->xTaskToNotify,
+									 MQTT_NOTIFY_IDX);
+	}
+}
+
+
+static BaseType_t prvPublishAndWaitForAck(MQTTAgentHandle_t xAgentHandle,
+										  const char *pcTopic,
+										  const void *pvPublishData,
+										  size_t xPublishDataLen)
+{
+	BaseType_t xResult = pdFALSE;
+	MQTTStatus_t xStatus;
+
+	configASSERT(pcTopic != NULL);
+	configASSERT(pvPublishData != NULL);
+	configASSERT(xPublishDataLen > 0);
+
+	MQTTPublishInfo_t xPublishInfo =
+		{
+			.qos = MQTT_PUBLISH_QOS,
+			.retain = 0,
+			.dup = 0,
+			.pTopicName = pcTopic,
+			.topicNameLength = (uint16_t)strlen(pcTopic),
+			.pPayload = pvPublishData,
+			.payloadLength = xPublishDataLen};
+
+	MQTTAgentCommandContext_t xCommandContext =
+		{
+			.xTaskToNotify = xTaskGetCurrentTaskHandle(),
+			.xReturnStatus = MQTTIllegalState,
+		};
+
+	MQTTAgentCommandInfo_t xCommandParams =
+		{
+			.blockTimeMs = MQTT_PUBLISH_BLOCK_TIME_MS,
+			.cmdCompleteCallback = prvPublishCommandCallback,
+			.pCmdCompleteCallbackContext = &xCommandContext,
+		};
+
+	/* Clear the notification index */
+	xTaskNotifyStateClearIndexed(NULL, MQTT_NOTIFY_IDX);
+
+	xStatus = MQTTAgent_Publish(xAgentHandle,
+								&xPublishInfo,
+								&xCommandParams);
+
+	if (xStatus == MQTTSuccess)
+	{
+		xResult = ulTaskNotifyTakeIndexed(MQTT_NOTIFY_IDX,
+										  pdTRUE,
+										  pdMS_TO_TICKS(MQTT_PUBLISH_NOTIFICATION_WAIT_MS));
+
+		if (xResult == 0)
+		{
+			LogError("Timed out while waiting for publish ACK or Sent event. xTimeout = %d",
+					 pdMS_TO_TICKS(MQTT_PUBLISH_NOTIFICATION_WAIT_MS));
+			xResult = pdFALSE;
+		}
+		else if (xCommandContext.xReturnStatus != MQTTSuccess)
+		{
+			LogError("MQTT Agent returned error code: %d during publish operation.",
+					 xCommandContext.xReturnStatus);
+			xResult = pdFALSE;
+		}
+	}
+	else
+	{
+		LogError("MQTTAgent_Publish returned error code: %d.",
+				 xStatus);
+	}
+
+	return xResult;
+}
+
+
+static BaseType_t xIsMqttConnected(void)
+{
+	/* Wait for MQTT to be connected */
+	EventBits_t uxEvents = xEventGroupWaitBits(xSystemEvents,
+											   EVT_MASK_MQTT_CONNECTED,
+											   pdFALSE,
+											   pdTRUE,
+											   0);
+
+	return ((uxEvents & EVT_MASK_MQTT_CONNECTED) == EVT_MASK_MQTT_CONNECTED);
+}
 
 void vRetrainProcessingTask(void* pvParameters) {
     (void)pvParameters; /* Cast to void to avoid unused parameter warning */
 
     RetrainHandlerHandle_t handler = &s_default_context;
     RetrainData_t received_message;
+    char pcS3ApiKey[S3_API_KEY_LEN];
+    char pcS3Endpoint[S3_ENDPOINT_LEN];
 
     if (handler->is_initialized == false) {
         LogError("Context is not initialized");
@@ -223,8 +357,70 @@ void vRetrainProcessingTask(void* pvParameters) {
                 LogError("Failed to initialize S3 client, error code: %d", init_result);
                 continue;
             }
+            
+            char pcTopicString[256] = {0};
+            size_t uxS3ApiKeyLen = KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN);
+            size_t uxS3EndpointLen = KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN);
+            if(uxS3ApiKeyLen == 0 || uxS3EndpointLen == 0)
+            {
+                char pcDeviceId[64];
+                size_t uxDevNameLen = KVStore_getString(CS_CORE_THING_NAME, pcDeviceId, 64);
 
-            int connect_result = S3Client_Connect();
+                size_t uxTopicLen = 0;
+                if (uxDevNameLen > 0)
+                {
+                    sprintf(pcTopicString, "$aws/rules/msg_d2c_rpt/%s/2.1/0", pcDeviceId);
+                    uxTopicLen = strlen(pcTopicString);
+                }
+               
+                if ((uxTopicLen == 0) || (uxTopicLen >= 256))
+                {
+                    LogError("Failed to construct topic string. Please configure the device");
+                    while (true) {
+                        vTaskDelay( 10000 ); // wait forever
+                    }
+                }
+
+                if (xIsMqttConnected() == pdTRUE) 
+                {   	
+                    uint32_t bytesWritten;
+                    char payloadBuf[512];
+                    MQTTAgentHandle_t xAgentHandle = xGetMqttAgentHandle();
+                    BaseType_t xResult;
+
+                    bytesWritten = snprintf( payloadBuf,
+                                512,
+                            "{\"d\":"\
+                            "[{\"d\":{\"requests3\":\"True\"}}]}");
+
+                    if (bytesWritten < 512) {
+                        xResult = prvPublishAndWaitForAck(xAgentHandle,
+                                                        pcTopicString,
+                                                        payloadBuf,
+                                                        bytesWritten
+                    );
+                    } else if (bytesWritten > 0) {
+                        LogError("Not enough buffer space.");
+                    } else {
+                        LogError("MQTT Publish call failed.");
+                    }
+                    if (xResult == pdTRUE) {
+                        LogDebug(payloadBuf);
+                        LogDebug("Topic name: %s", pcTopicString);
+                    }
+                }
+
+                LogInfo("Waiting for S3 API Key and Endpoint to be obtained...");
+                while(0 == KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN) ||
+                     0 == KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN))
+                {
+                    vTaskDelay(1000);
+                }
+            }
+
+            // Here we assume that the S3 API Key and Endpoint are already obtained
+            // and we can use them to connect to the S3 client
+            int connect_result = S3Client_Connect( pcS3Endpoint );
             if (connect_result != S3_CLIENT_SUCCESS) {
                 LogError("Failed to connect to S3 client, error code: %d", connect_result);
                 continue;
@@ -232,19 +428,20 @@ void vRetrainProcessingTask(void* pvParameters) {
 
             HTTPCustomHeader_t headers[] = {
                 {"Content-Type", CONTENT_TYPE_AUDIO},
-                {"x-api-key", "DkIxv0zK8T7qHHajtc5y58182rBycj6V7OTMzsEe"},
+                {"x-api-key", pcS3ApiKey},
                 {"sound-classes", received_message.classification} // Use received classification
             };
 
             int result = S3Client_Post(
+                pcS3Endpoint,
                 received_message.buffer,
                 received_message.buffer_size,
                 headers,
                 sizeof(headers) / sizeof(headers[0])
             );
 
-            LogDebug("S3Client_Post completed with result: %d", result); // Updated log message
-
+            LogDebug("S3Client_Post completed with result: %d", result);
+            
             int disconnect_result = S3Client_Disconnect();
             if (disconnect_result != S3_CLIENT_SUCCESS) {
                 LogError("Failed to disconnect from AWS S3. Error code: %d", disconnect_result);

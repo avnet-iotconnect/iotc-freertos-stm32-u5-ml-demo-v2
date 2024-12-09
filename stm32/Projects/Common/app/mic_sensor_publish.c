@@ -140,6 +140,33 @@ static bool is_dma_half_event(uint32_t notifiedValue);
  * @return `true` if the `MIC_EVT_DMA_CPLT` flag is set, `false` otherwise.
  */
 static bool is_dma_cplt_event(uint32_t notifiedValue);
+
+/**
+ * @brief Parses the payload to find comma-separated values.
+ *
+ * This function parses the given payload to find comma-separated values and returns
+ * a pointer to them with their lengths. It also returns the number of items found.
+ *
+ * @param payload The payload to parse.
+ * @param values An array of pointers to store the start of each value.
+ * @param lengths An array to store the length of each value.
+ * @param max_values The maximum number of values to parse.
+ * @return The number of items found.
+ */
+static int parse_csv_values(const char *payload, const char **values, size_t *lengths, size_t max_values);
+
+/**
+ * @brief Strips provided symbols from the payload at the endings.
+ *
+ * This function manipulates the start pointer and null terminator symbol
+ * to strip the specified symbols from the beginning and end of the payload.
+ *
+ * @param payload The payload to strip symbols from.
+ * @param symbols The array of symbols to strip.
+ * @param num_symbols The number of symbols in the array.
+ * @return The stripped payload.
+ */
+static char* strip_symbols(char *payload, const char symbols[], uint32_t num_symbols);
 /*-----------------------------------------------------------*/
 static void prvPublishCommandCallback(MQTTAgentCommandContext_t *pxCommandContext,
 									  MQTTAgentReturnInfo_t *pxReturnInfo)
@@ -336,7 +363,8 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
     const char* OFFSETS_CMD = "set-confidence-offsets ";
     const char* THRESHOLD_CMD = "set-confidence-threshold ";
     const char* INACTIVITY_TIMEOUT_CMD = "set-inactivity-timeout ";
-	const char* RETRAIN_CMD = "retrain";
+	const char* RETRAIN_CMD = "retrain_start";
+	const char* S3_CREDS_CMD = "creds_s3";
     if (!publish_info) {
         LogError("on_c2d_message: Publish info is NULL?");
         return;
@@ -384,6 +412,42 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
 		} else {
 			LogError("Failed scanning %s command arguments", RETRAIN_CMD);
 		}
+	} else if (NULL != strstr(payload, S3_CREDS_CMD)) {
+        // Define an enumeration for the credential keys
+        enum CredKeys{ENDPOINT_KEY = 0, API_KEY, KEYS_NUM};
+        // Arrays to store the lengths and values of the credentials
+        uint32_t length[KEYS_NUM];
+        const char *values[KEYS_NUM];
+        // Symbols to be stripped from the arguments
+        char symbols[] = {'"', ' ', '{', '}'};
+        const char* args = NULL;
+        
+        // Find the S3 credentials command in the payload and move the pointer to the arguments
+        args = strstr(payload, S3_CREDS_CMD) + strlen(S3_CREDS_CMD);
+        // Strip unwanted symbols from the arguments
+        args = strip_symbols(args, symbols, sizeof(symbols));
+
+        // Parse the CSV values from the arguments
+        int count = parse_csv_values(args, values, length, KEYS_NUM);
+        if (count == KEYS_NUM) {
+            LogInfo("Received new S3 credentials");
+
+            // Create buffers to store the endpoint and API key
+            char endpoint_buffer[length[ENDPOINT_KEY] + 1];
+            char api_key_buffer[length[API_KEY] + 1];
+
+            // Copy the parsed values into the buffers
+            sprintf(endpoint_buffer, "%.*s", length[ENDPOINT_KEY], values[ENDPOINT_KEY]);
+            sprintf(api_key_buffer, "%.*s", length[API_KEY], values[API_KEY]);
+
+            // Store the new credentials in the key-value store
+            KVStore_setString(CS_S3_ENDPOINT, endpoint_buffer);
+            KVStore_setString(CS_S3_API_KEY, api_key_buffer);
+
+			// TODO: Commit the changes to the key-value store
+        } else {
+            LogError("Failed to parse S3 credentials. Expected items num %d, got %d", KEYS_NUM, count);
+        }
     } else {
     	LogError("Unknown command!");
     }
@@ -433,6 +497,66 @@ static bool is_dma_half_event(uint32_t notifiedValue) {
 
 static bool is_dma_cplt_event(uint32_t notifiedValue) {
     return (notifiedValue & MIC_EVT_DMA_CPLT) != 0;
+}
+
+static int parse_csv_values(const char *payload, const char **values, size_t *lengths, size_t max_values) {
+    size_t count = 0; // Initialize count of parsed values
+    const char *start = payload; // Pointer to the start of the current value
+    const char *end = NULL; // Pointer to the end of the current value
+
+    // Loop to parse values separated by commas
+    while (count < max_values && (end = strchr(start, ',')) != NULL) {
+        values[count] = start; // Store the start of the value
+        lengths[count] = end - start; // Calculate and store the length of the value
+        count++; // Increment the count of parsed values
+        start = end + 1; // Move the start pointer to the next value
+    }
+
+    // Handle the last value if it exists and is not empty
+    if (count < max_values && *start != '\0') {
+        values[count] = start; // Store the start of the last value
+        lengths[count] = strlen(start); // Calculate and store the length of the last value
+        count++; // Increment the count of parsed values
+    }
+
+    return count; // Return the number of parsed values
+}
+
+static char* strip_symbols(char *payload, const char symbols[], uint32_t num_symbols) {
+    
+    // Strip symbols from the beginning of the payload
+    while (*payload) {
+        bool found = false;
+        for (uint32_t i = 0; i < num_symbols; i++) {
+            if (*payload == symbols[i]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            break;
+        }
+        payload++; // Move to the next character
+    }
+
+    // Strip symbols from the end of the payload
+    char *end = payload + strlen(payload) - 1;
+    while (end > payload) {
+        bool found = false;
+        for (uint32_t i = 0; i < num_symbols; i++) {
+            if (*end == symbols[i]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            break;
+        }
+        *end = '\0';
+        end--; // Move to the previous character
+    }
+
+    return payload; // Return the stripped payload
 }
 
 void vMicSensorPublishTask(void *pvParameters)

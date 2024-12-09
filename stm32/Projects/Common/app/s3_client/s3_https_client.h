@@ -57,34 +57,73 @@ typedef struct {
  * 
  * @return S3_CLIENT_SUCCESS if initialization was successful, 
  *         S3_CLIENT_ERROR if there was an error.
+ * 
+ * @usage
+ * @code
+ * int result = S3Client_Init();
+ * if (result == S3_CLIENT_SUCCESS) {
+ *     // Initialization successful
+ * } else {
+ *     // Handle error
+ * }
+ * @endcode
  */
 int S3Client_Init(void);
 
 /**
  * @brief Establishes an HTTPS connection to the S3 endpoint.
  * 
- * This function attempts to connect to the S3 endpoint over HTTPS. 
+ * This function attempts to connect to the S3 endpoint over HTTPS using the provided hostname and path.
  * It returns S3_CLIENT_SUCCESS if the connection was successfully established, 
  * or an error code if the connection failed.
  * 
+ * @param[in] hostnameWithPath The full hostname and path of the S3 endpoint.
+ * 
  * @return S3_CLIENT_SUCCESS if the connection was successful, 
- *         S3_CLIENT_CONN_FAILED if the connection failed.
+ *         S3_CLIENT_ERROR if the connection failed.
+ * 
+ * @usage
+ * @code
+ * const char *hostnameWithPath = "s3.amazonaws.com/mybucket";
+ * int result = S3Client_Connect(hostnameWithPath);
+ * if (result == S3_CLIENT_SUCCESS) {
+ *     // Connection successful
+ * } else {
+ *     // Handle error
+ * }
+ * @endcode
  */
-int S3Client_Connect(void);
+int S3Client_Connect(const char *hostnameWithPath);
 
 /**
  * @brief Sends a POST request to upload an object to AWS S3.
  * 
  * This function sends a POST request to the S3 endpoint to upload an object.
  *
+ * @param[in] hostnameWithPath The full hostname and path of the S3 endpoint.
  * @param[in] payload Pointer to the data to be uploaded.
  * @param[in] payloadLength Length of the data to be uploaded.
  * @param[in] userHeaders Pointer to an array of custom HTTP headers.
  * @param[in] headerCount Number of custom HTTP headers.
  *
  * @return S3_CLIENT_SUCCESS on success, or an appropriate error code on failure.
+ * 
+ * @usage
+ * @code
+ * const char *hostnameWithPath = "s3.amazonaws.com/mybucket";
+ * const char *payload = "data to upload";
+ * uint32_t payloadLength = strlen(payload);
+ * HTTPCustomHeader_t headers[] = {{"Content-Type", "application/octet-stream"}};
+ * int headerCount = sizeof(headers) / sizeof(headers[0]);
+ * int result = S3Client_Post(hostnameWithPath, payload, payloadLength, headers, headerCount);
+ * if (result == S3_CLIENT_SUCCESS) {
+ *     // Upload successful
+ * } else {
+ *     // Handle error
+ * }
+ * @endcode
  */
-int S3Client_Post(const char *payload, 
+int S3Client_Post(const char *hostnameWithPath, const char *payload, 
                         uint32_t payloadLength, 
                         HTTPCustomHeader_t* userHeaders, 
                         uint8_t headerCount);
@@ -96,6 +135,16 @@ int S3Client_Post(const char *payload,
  * 
  * @return S3_CLIENT_SUCCESS if the disconnection was successful, 
  *         S3_CLIENT_DISCONNECT_FAILED if the disconnection failed.
+ * 
+ * @usage
+ * @code
+ * int result = S3Client_Disconnect();
+ * if (result == S3_CLIENT_SUCCESS) {
+ *     // Disconnection successful
+ * } else {
+ *     // Handle error
+ * }
+ * @endcode
  */
 int S3Client_Disconnect(void);
 
