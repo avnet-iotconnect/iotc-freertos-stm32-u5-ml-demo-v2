@@ -54,6 +54,10 @@ The solution provides automated ML model retraining and consequent firmware upda
 
 Recreate the entire setup as demonstrated in our comprehensive **[ML Audio Classifier Demo Setup Guide](DEMO.md)**.
 
-# Important Notes
+## Solution Architecture
+
+<img src="media/architecture.png" alt="drawing"/>
+
+## Important Notes
 
 Every time you update firmware source code in main branch - necessarily update the minor revision of the firmware version, e.g. if firmware version is "1.0.2", change it to "1.1.2". Also necessarily delete the "retrained-model" branch, so the retrain flow will use your latest changes in the main branch.
