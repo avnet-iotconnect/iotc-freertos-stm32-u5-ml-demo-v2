@@ -15,6 +15,8 @@
 #include "retrain_handler.h"
 #include "app/s3_client/s3_https_client.h"
 #include "ai_model_config.h"
+#include "kvstore.h"
+
 /* MQTT library includes. */
 #include "core_mqtt.h"
 #include "core_mqtt_agent.h"
@@ -57,6 +59,8 @@ struct MQTTAgentCommandContext
 /* Content type for audio data */
 #define CONTENT_TYPE_AUDIO "audio/wav"
 
+#define S3_API_KEY_LEN 255
+#define S3_ENDPOINT_LEN 255
 /* ============================ Static Variables ============================ */
 
 /* Internal context structure */
@@ -333,6 +337,8 @@ void vRetrainProcessingTask(void* pvParameters) {
 
     RetrainHandlerHandle_t handler = &s_default_context;
     RetrainData_t received_message;
+    char pcS3ApiKey[S3_API_KEY_LEN];
+    char pcS3Endpoint[S3_ENDPOINT_LEN];
 
     if (handler->is_initialized == false) {
         LogError("Context is not initialized");
@@ -418,7 +424,7 @@ void vRetrainProcessingTask(void* pvParameters) {
 
             HTTPCustomHeader_t headers[] = {
                 {"Content-Type", CONTENT_TYPE_AUDIO},
-                {"x-api-key", "DkIxv0zK8T7qHHajtc5y58182rBycj6V7OTMzsEe"},
+                {"x-api-key", pcS3ApiKey},
                 {"sound-classes", received_message.classification} // Use received classification
             };
 

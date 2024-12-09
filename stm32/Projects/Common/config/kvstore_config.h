@@ -38,6 +38,7 @@ typedef enum KvStoreEnum
     CS_TIME_HWM_S_1970,
     CS_IOTC_CD,
     CS_S3_API_KEY,
+    CS_S3_ENDPOINT,
     CS_NUM_KEYS
 } KVStoreKey_t;
 
@@ -51,6 +52,7 @@ typedef enum KvStoreEnum
 #define IOTC_CD_DEFAULT		  ""
 #define WIFI_SECURITY_DFLT
 #define S3_API_KEY_DEFAULT    ""
+#define S3_ENDPOINT_DEFAULT    ""
 
 /* Array to map between strings and KVStoreKey_t IDs */
 #define KV_STORE_STRINGS   \
@@ -61,8 +63,9 @@ typedef enum KvStoreEnum
         "wifi_ssid",       \
         "wifi_credential", \
         "time_hwm",        \
-        "iotc_cd" 		   \
-        "s3_api_key"       \
+        "iotc_cd", 		   \
+        "s3_api_key",      \
+        "s3_endpoint"      \
     }
 
 #define KV_STORE_DEFAULTS                                                          \
@@ -74,7 +77,8 @@ typedef enum KvStoreEnum
         KV_DFLT( KV_TYPE_STRING, WIFI_PASSWORD_DFLT ), /* CS_WIFI_CREDENTIAL */    \
         KV_DFLT( KV_TYPE_UINT32, 0 ),                  /* CS_TIME_HWM_S_1970 */    \
         KV_DFLT( KV_TYPE_STRING, IOTC_CD_DEFAULT ),    /* CS_IOTC_CD */    		   \
-        KV_DFLT( KV_TYPE_STRING, S3_API_KEY_DEFAULT ), /* CS_S3_API_KEY */    		   \
+        KV_DFLT( KV_TYPE_STRING, S3_API_KEY_DEFAULT ), /* CS_S3_API_KEY */ 		   \
+        KV_DFLT( KV_TYPE_STRING, S3_ENDPOINT_DEFAULT ),/* CS_S3_ENDPOINT */ 	   \
     }
 
 #endif /* _KVSTORE_CONFIG_H */
