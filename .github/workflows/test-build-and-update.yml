@@ -25,7 +25,7 @@ jobs:
       - name: Artifacts upload
         uses: actions/upload-artifact@v4
         with:
-          name: dist-without-markdown
+          name: debug
           path: stm32/Projects/b_u585i_iot02a_ntz/Debug
           retention-days: 1
 
