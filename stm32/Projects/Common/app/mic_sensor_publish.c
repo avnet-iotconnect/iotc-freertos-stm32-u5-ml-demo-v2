@@ -363,7 +363,8 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
     const char* OFFSETS_CMD = "set-confidence-offsets ";
     const char* THRESHOLD_CMD = "set-confidence-threshold ";
     const char* INACTIVITY_TIMEOUT_CMD = "set-inactivity-timeout ";
-	const char* RETRAIN_CMD = "retrain";
+	const char* RETRAIN_CMD = "retrain_start";
+	const char* S3_CREDS_CMD = "creds_s3";
     if (!publish_info) {
         LogError("on_c2d_message: Publish info is NULL?");
         return;
@@ -411,6 +412,42 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
 		} else {
 			LogError("Failed scanning %s command arguments", RETRAIN_CMD);
 		}
+	} else if (NULL != strstr(payload, S3_CREDS_CMD)) {
+        // Define an enumeration for the credential keys
+        enum CredKeys{ENDPOINT_KEY = 0, API_KEY, KEYS_NUM};
+        // Arrays to store the lengths and values of the credentials
+        uint32_t length[KEYS_NUM];
+        const char *values[KEYS_NUM];
+        // Symbols to be stripped from the arguments
+        char symbols[] = {'"', ' ', '{', '}'};
+        const char* args = NULL;
+        
+        // Find the S3 credentials command in the payload and move the pointer to the arguments
+        args = strstr(payload, S3_CREDS_CMD) + strlen(S3_CREDS_CMD);
+        // Strip unwanted symbols from the arguments
+        args = strip_symbols(args, symbols, sizeof(symbols));
+
+        // Parse the CSV values from the arguments
+        int count = parse_csv_values(args, values, length, KEYS_NUM);
+        if (count == KEYS_NUM) {
+            LogInfo("Received new S3 credentials");
+
+            // Create buffers to store the endpoint and API key
+            char endpoint_buffer[length[ENDPOINT_KEY] + 1];
+            char api_key_buffer[length[API_KEY] + 1];
+
+            // Copy the parsed values into the buffers
+            sprintf(endpoint_buffer, "%.*s", length[ENDPOINT_KEY], values[ENDPOINT_KEY]);
+            sprintf(api_key_buffer, "%.*s", length[API_KEY], values[API_KEY]);
+
+            // Store the new credentials in the key-value store
+            KVStore_setString(CS_S3_ENDPOINT, endpoint_buffer);
+            KVStore_setString(CS_S3_API_KEY, api_key_buffer);
+
+			// TODO: Commit the changes to the key-value store
+        } else {
+            LogError("Failed to parse S3 credentials. Expected items num %d, got %d", KEYS_NUM, count);
+        }
     } else {
     	LogError("Unknown command!");
     }
