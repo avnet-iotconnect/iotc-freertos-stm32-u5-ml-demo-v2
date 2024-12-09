@@ -158,7 +158,6 @@ RetrainHandlerStatus_t RetrainHandler_SetBufferData(const uint8_t* data, size_t 
 
     /* Copy data to the audio buffer */
     memcpy(handler->audio_buffer, data, size);
-    LogDebug("Audio buffer set successfully");
 
     return RETRAIN_HANDLER_OK;
 }
