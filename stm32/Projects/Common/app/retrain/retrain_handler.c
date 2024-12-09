@@ -357,7 +357,7 @@ void vRetrainProcessingTask(void* pvParameters) {
                 LogError("Failed to initialize S3 client, error code: %d", init_result);
                 continue;
             }
-
+            
             char pcTopicString[256] = {0};
             size_t uxS3ApiKeyLen = KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN);
             size_t uxS3EndpointLen = KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN);
@@ -417,6 +417,10 @@ void vRetrainProcessingTask(void* pvParameters) {
                     vTaskDelay(1000);
                 }
             }
+
+            // Here we assume that the S3 API Key and Endpoint are already obtained
+            // and we can use them to connect to the S3 client
+            int connect_result = S3Client_Connect( pcS3Endpoint );
             if (connect_result != S3_CLIENT_SUCCESS) {
                 LogError("Failed to connect to S3 client, error code: %d", connect_result);
                 continue;
@@ -429,14 +433,15 @@ void vRetrainProcessingTask(void* pvParameters) {
             };
 
             int result = S3Client_Post(
+                pcS3Endpoint,
                 received_message.buffer,
                 received_message.buffer_size,
                 headers,
                 sizeof(headers) / sizeof(headers[0])
             );
 
-            LogDebug("S3Client_Post completed with result: %d", result); // Updated log message
-
+            LogDebug("S3Client_Post completed with result: %d", result);
+            
             int disconnect_result = S3Client_Disconnect();
             if (disconnect_result != S3_CLIENT_SUCCESS) {
                 LogError("Failed to disconnect from AWS S3. Error code: %d", disconnect_result);
