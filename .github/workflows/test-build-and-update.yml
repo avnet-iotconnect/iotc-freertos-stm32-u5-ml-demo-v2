@@ -27,6 +27,7 @@ jobs:
         with:
           name: dist-without-markdown
           path: stm32/Projects/b_u585i_iot02a_ntz/Debug
+          retention-days: 1
 
       - name: Setup python environment
         uses: actions/setup-python@v5
