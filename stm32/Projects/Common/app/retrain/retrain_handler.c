@@ -34,6 +34,20 @@
 
 #define S3_API_KEY_LEN 255
 #define S3_ENDPOINT_LEN 255
+
+/* Maximum length for device ID string */
+#define DEVICE_ID_LEN 64
+
+/* Maximum length for topic string */
+#define TOPIC_STRING_LEN 256
+
+/* Maximum length for payload buffer */
+#define PAYLOAD_BUF_LEN 512
+
+/* Retry delay and period in milliseconds */
+#define RETRY_DELAY_MS 1000
+#define RETRY_PERIOD_MS 30000
+
 /* ============================ Static Variables ============================ */
 
 /* Internal context structure */
@@ -230,13 +244,13 @@ void vRetrainProcessingTask(void* pvParameters) {
                 continue;
             }
             
-            char pcTopicString[256] = {0};
+            char pcTopicString[TOPIC_STRING_LEN] = {0};
             size_t uxS3ApiKeyLen = KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN);
             size_t uxS3EndpointLen = KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN);
             if(uxS3ApiKeyLen == 0 || uxS3EndpointLen == 0)
             {
-                char pcDeviceId[64];
-                size_t uxDevNameLen = KVStore_getString(CS_CORE_THING_NAME, pcDeviceId, 64);
+                char pcDeviceId[DEVICE_ID_LEN];
+                size_t uxDevNameLen = KVStore_getString(CS_CORE_THING_NAME, pcDeviceId, DEVICE_ID_LEN);
 
                 size_t uxTopicLen = 0;
                 if (uxDevNameLen > 0)
@@ -245,19 +259,19 @@ void vRetrainProcessingTask(void* pvParameters) {
                     uxTopicLen = strlen(pcTopicString);
                 }
                
-                if ((uxTopicLen == 0) || (uxTopicLen >= 256))
+                if ((uxTopicLen == 0) || (uxTopicLen >= TOPIC_STRING_LEN))
                 {
                     LogError("Failed to construct topic string. Please configure the device");
                     while (true) {
-                        vTaskDelay( 10000 ); // wait forever
+                        vTaskDelay( pdMS_TO_TICKS(RETRY_DELAY_MS) ); // wait forever
                     }
                 }
 
                 // Prepare the payload
-                char payloadBuf[512];
-                int bytesWritten = snprintf(payloadBuf, 512, "{\"d\":[{\"d\":{\"requests3\":\"True\"}}]}");
+                char payloadBuf[PAYLOAD_BUF_LEN];
+                int bytesWritten = snprintf(payloadBuf, PAYLOAD_BUF_LEN, "{\"d\":[{\"d\":{\"requests3\":\"True\"}}]}");
 
-                if (bytesWritten < 512)
+                if (bytesWritten < PAYLOAD_BUF_LEN)
                 {
                     // Publish the payload to the topic
                     bool result = PublishPayloadToTopic(pcTopicString, payloadBuf, (size_t)bytesWritten);
@@ -278,10 +292,9 @@ void vRetrainProcessingTask(void* pvParameters) {
                 
                 LogInfo("Waiting for S3 API Key and Endpoint to be obtained...");
 
-
                // Initialize timeout variables
-                TickType_t xDelay = pdMS_TO_TICKS(1000);
-                TickType_t xRetryPeriod = pdMS_TO_TICKS(30000); // Retry for 30 seconds
+                TickType_t xDelay = pdMS_TO_TICKS(RETRY_DELAY_MS);
+                TickType_t xRetryPeriod = pdMS_TO_TICKS(RETRY_PERIOD_MS); // Retry for 30 seconds
                 TimeOut_t xTimeOut;
 
                 vTaskSetTimeOutState(&xTimeOut);
@@ -289,7 +302,7 @@ void vRetrainProcessingTask(void* pvParameters) {
                 while (KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN) == 0 ||
                     KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN) == 0)
                 {
-                    vTaskDelay(xDelay); // Wait for 1 second
+                    vTaskDelay(xDelay);
 
                     if (xTaskCheckForTimeOut(&xTimeOut, &xRetryPeriod) != pdFALSE)
                     {
@@ -302,7 +315,7 @@ void vRetrainProcessingTask(void* pvParameters) {
                         }
 
                         // Reset timeout variables
-                        xRetryPeriod = pdMS_TO_TICKS(30000); // Reset total timeout
+                        xRetryPeriod = pdMS_TO_TICKS(RETRY_PERIOD_MS);
                         vTaskSetTimeOutState(&xTimeOut);
                     }
                 }
