@@ -1,12 +1,9 @@
-name: Build Firmware and create OTA Update
+name: Test Build Firmware and create OTA Update
 
-on: 
-  push:
-    branches: 
-      - "retrained-model"
+on: workflow_dispatch
 
 jobs:
-  fw_build:
+  test_fw_build:
     runs-on: codebuild-AvnetStm32FWBuild-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out code
@@ -25,12 +22,12 @@ jobs:
           mkdir ../iot-connect/ota
           cp Projects/b_u585i_iot02a_ntz/Debug/b_u585i_iot02a_ntz.bin ../iot-connect/ota/fw.iso
 
-      - name: FW artifact upload
+      - name: Artifacts upload
         uses: actions/upload-artifact@v4
         with:
-          name: fw.bin
-          path: stm32/Projects/b_u585i_iot02a_ntz/Debug/b_u585i_iot02a_ntz.bin
-          retention-days: 2
+          name: debug
+          path: stm32/Projects/b_u585i_iot02a_ntz/Debug
+          retention-days: 1
 
       - name: Setup python environment
         uses: actions/setup-python@v5

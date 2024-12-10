@@ -106,6 +106,7 @@ export class SagmakerPipeline extends Construct {
         computeType: ComputeType.X_LARGE,
         buildImage: aws_codebuild.LinuxBuildImage.STANDARD_7_0
       },
+      concurrentBuildLimit: 1,
       timeout: Duration.minutes(120),
       encryptionKey: buildEncryptionKey,
       source: aws_codebuild.Source.s3({
