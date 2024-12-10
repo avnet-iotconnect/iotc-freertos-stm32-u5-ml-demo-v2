@@ -83,6 +83,11 @@
 /* Maximum hostname length */
 #define MAX_HOSTNAME_LEN 255
 
+/* Define MASK_SECRETS to control whether secret data should be masked in logs.
+ * Set to 1 to mask secret data, or 0 to show the actual values.
+ */
+#define MASK_SECRETS 1
+
 /* ============================ Static Variables ============================ */
 
 /* HTTP Client and Network contexts */
@@ -289,8 +294,13 @@ int S3Client_Post(const char *hostnameWithPath, const char *payload,
     /* Add user-provided custom headers */
     for (uint8_t i = 0; i < headerCount; i++) {
         if (userHeaders[i].key && userHeaders[i].value) {
+#if MASK_SECRETS
+            LogDebug("Adding Custom Header: Key='%s', Value='****'", 
+                     userHeaders[i].key);
+#else
             LogDebug("Adding Custom Header: Key='%s', Value='%s'", 
                      userHeaders[i].key, userHeaders[i].value);
+#endif
             
             HTTPClient_AddHeader(&headers, 
                                  userHeaders[i].key, 
