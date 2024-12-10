@@ -277,10 +277,34 @@ void vRetrainProcessingTask(void* pvParameters) {
                 }
                 
                 LogInfo("Waiting for S3 API Key and Endpoint to be obtained...");
-                while(0 == KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN) ||
-                     0 == KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN))
+
+
+               // Initialize timeout variables
+                TickType_t xDelay = pdMS_TO_TICKS(1000);
+                TickType_t xRetryPeriod = pdMS_TO_TICKS(30000); // Retry for 30 seconds
+                TimeOut_t xTimeOut;
+
+                vTaskSetTimeOutState(&xTimeOut);
+
+                while (KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN) == 0 ||
+                    KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN) == 0)
                 {
-                    vTaskDelay(1000);
+                    vTaskDelay(xDelay); // Wait for 1 second
+
+                    if (xTaskCheckForTimeOut(&xTimeOut, &xRetryPeriod) != pdFALSE)
+                    {
+                        // Resend the request
+                        bool result = PublishPayloadToTopic(pcTopicString, payloadBuf, (size_t)bytesWritten);
+                        if (result)
+                        {
+                            LogDebug("Creds request resent : %s", payloadBuf);
+                            LogDebug("Topic name: %s", pcTopicString);
+                        }
+
+                        // Reset timeout variables
+                        xRetryPeriod = pdMS_TO_TICKS(30000); // Reset total timeout
+                        vTaskSetTimeOutState(&xTimeOut);
+                    }
                 }
             }
 
