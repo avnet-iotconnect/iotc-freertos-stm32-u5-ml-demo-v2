@@ -14,7 +14,7 @@ train_parameters:
 
 dataset:
   name: fsd50k
-  class_names: ['Speech', 'Gunshot_and_gunfire', 'Crying_and_sobbing', 'Knock', 'Glass']
+  class_names: ['Alarm', 'Bark', 'Liquid', 'Race_car_and_auto_racing', 'Vehicle_horn_and_car_horn_and_honking']
   audio_path: 
   csv_path: 
   file_extension: .wav
