@@ -13,37 +13,10 @@
 #include "logging.h"
 
 #include "retrain_handler.h"
+#include "mqtt_handler.h"
 #include "app/s3_client/s3_https_client.h"
 #include "ai_model_config.h"
 #include "kvstore.h"
-
-/* MQTT library includes. */
-#include "core_mqtt.h"
-#include "core_mqtt_agent.h"
-#include "subscription_manager.h"
-#include "mqtt_agent_task.h"
-#include "sys_evt.h"
-
-#define MQTT_PUBLISH_MAX_LEN (512)
-#define MQTT_PUBLISH_TIME_BETWEEN_MS (5000)
-#define MQTT_PUBLISH_TOPIC "mic_sensor_data"
-#define MQTT_PUBLICH_TOPIC_STR_LEN (256)
-#define IOTC_CD_MAX_LEN (10)
-#define MQTT_PUBLISH_BLOCK_TIME_MS (1000)
-#define MQTT_PUBLISH_NOTIFICATION_WAIT_MS (1000)
-
-#define MQTT_NOTIFY_IDX (1)
-#define MQTT_PUBLISH_QOS (MQTTQoS0)
-
-/**
- * @brief Defines the structure to use as the command callback context in this
- * demo.
- */
-struct MQTTAgentCommandContext
-{
-	MQTTStatus_t xReturnStatus;
-	TaskHandle_t xTaskToNotify;
-};
 
 /* ============================ Constants and Macros ============================ */
 
@@ -61,6 +34,20 @@ struct MQTTAgentCommandContext
 
 #define S3_API_KEY_LEN 255
 #define S3_ENDPOINT_LEN 255
+
+/* Maximum length for device ID string */
+#define DEVICE_ID_LEN 64
+
+/* Maximum length for topic string */
+#define TOPIC_STRING_LEN 256
+
+/* Maximum length for payload buffer */
+#define PAYLOAD_BUF_LEN 512
+
+/* Retry delay and period in milliseconds */
+#define RETRY_DELAY_MS 1000
+#define RETRY_PERIOD_MS 30000
+
 /* ============================ Static Variables ============================ */
 
 /* Internal context structure */
@@ -230,107 +217,6 @@ RetrainHandlerStatus_t RetrainHandler_EnqueueBufferData(const char* classificati
     return enqueue_status;
 }
 /*-----------------------------------------------------------*/
-static void prvPublishCommandCallback(MQTTAgentCommandContext_t *pxCommandContext,
-									  MQTTAgentReturnInfo_t *pxReturnInfo)
-{
-	configASSERT(pxCommandContext != NULL);
-	configASSERT(pxReturnInfo != NULL);
-
-	pxCommandContext->xReturnStatus = pxReturnInfo->returnCode;
-
-	if (pxCommandContext->xTaskToNotify != NULL)
-	{
-		/* Send the context's ulNotificationValue as the notification value so
-		 * the receiving task can check the value it set in the context matches
-		 * the value it receives in the notification. */
-		(void)xTaskNotifyGiveIndexed(pxCommandContext->xTaskToNotify,
-									 MQTT_NOTIFY_IDX);
-	}
-}
-
-
-static BaseType_t prvPublishAndWaitForAck(MQTTAgentHandle_t xAgentHandle,
-										  const char *pcTopic,
-										  const void *pvPublishData,
-										  size_t xPublishDataLen)
-{
-	BaseType_t xResult = pdFALSE;
-	MQTTStatus_t xStatus;
-
-	configASSERT(pcTopic != NULL);
-	configASSERT(pvPublishData != NULL);
-	configASSERT(xPublishDataLen > 0);
-
-	MQTTPublishInfo_t xPublishInfo =
-		{
-			.qos = MQTT_PUBLISH_QOS,
-			.retain = 0,
-			.dup = 0,
-			.pTopicName = pcTopic,
-			.topicNameLength = (uint16_t)strlen(pcTopic),
-			.pPayload = pvPublishData,
-			.payloadLength = xPublishDataLen};
-
-	MQTTAgentCommandContext_t xCommandContext =
-		{
-			.xTaskToNotify = xTaskGetCurrentTaskHandle(),
-			.xReturnStatus = MQTTIllegalState,
-		};
-
-	MQTTAgentCommandInfo_t xCommandParams =
-		{
-			.blockTimeMs = MQTT_PUBLISH_BLOCK_TIME_MS,
-			.cmdCompleteCallback = prvPublishCommandCallback,
-			.pCmdCompleteCallbackContext = &xCommandContext,
-		};
-
-	/* Clear the notification index */
-	xTaskNotifyStateClearIndexed(NULL, MQTT_NOTIFY_IDX);
-
-	xStatus = MQTTAgent_Publish(xAgentHandle,
-								&xPublishInfo,
-								&xCommandParams);
-
-	if (xStatus == MQTTSuccess)
-	{
-		xResult = ulTaskNotifyTakeIndexed(MQTT_NOTIFY_IDX,
-										  pdTRUE,
-										  pdMS_TO_TICKS(MQTT_PUBLISH_NOTIFICATION_WAIT_MS));
-
-		if (xResult == 0)
-		{
-			LogError("Timed out while waiting for publish ACK or Sent event. xTimeout = %d",
-					 pdMS_TO_TICKS(MQTT_PUBLISH_NOTIFICATION_WAIT_MS));
-			xResult = pdFALSE;
-		}
-		else if (xCommandContext.xReturnStatus != MQTTSuccess)
-		{
-			LogError("MQTT Agent returned error code: %d during publish operation.",
-					 xCommandContext.xReturnStatus);
-			xResult = pdFALSE;
-		}
-	}
-	else
-	{
-		LogError("MQTTAgent_Publish returned error code: %d.",
-				 xStatus);
-	}
-
-	return xResult;
-}
-
-
-static BaseType_t xIsMqttConnected(void)
-{
-	/* Wait for MQTT to be connected */
-	EventBits_t uxEvents = xEventGroupWaitBits(xSystemEvents,
-											   EVT_MASK_MQTT_CONNECTED,
-											   pdFALSE,
-											   pdTRUE,
-											   0);
-
-	return ((uxEvents & EVT_MASK_MQTT_CONNECTED) == EVT_MASK_MQTT_CONNECTED);
-}
 
 void vRetrainProcessingTask(void* pvParameters) {
     (void)pvParameters; /* Cast to void to avoid unused parameter warning */
@@ -358,13 +244,13 @@ void vRetrainProcessingTask(void* pvParameters) {
                 continue;
             }
             
-            char pcTopicString[256] = {0};
+            char pcTopicString[TOPIC_STRING_LEN] = {0};
             size_t uxS3ApiKeyLen = KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN);
             size_t uxS3EndpointLen = KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN);
             if(uxS3ApiKeyLen == 0 || uxS3EndpointLen == 0)
             {
-                char pcDeviceId[64];
-                size_t uxDevNameLen = KVStore_getString(CS_CORE_THING_NAME, pcDeviceId, 64);
+                char pcDeviceId[DEVICE_ID_LEN];
+                size_t uxDevNameLen = KVStore_getString(CS_CORE_THING_NAME, pcDeviceId, DEVICE_ID_LEN);
 
                 size_t uxTopicLen = 0;
                 if (uxDevNameLen > 0)
@@ -373,48 +259,65 @@ void vRetrainProcessingTask(void* pvParameters) {
                     uxTopicLen = strlen(pcTopicString);
                 }
                
-                if ((uxTopicLen == 0) || (uxTopicLen >= 256))
+                if ((uxTopicLen == 0) || (uxTopicLen >= TOPIC_STRING_LEN))
                 {
                     LogError("Failed to construct topic string. Please configure the device");
                     while (true) {
-                        vTaskDelay( 10000 ); // wait forever
+                        vTaskDelay( pdMS_TO_TICKS(RETRY_DELAY_MS) ); // wait forever
                     }
                 }
 
-                if (xIsMqttConnected() == pdTRUE) 
-                {   	
-                    int bytesWritten;
-                    char payloadBuf[512];
-                    MQTTAgentHandle_t xAgentHandle = xGetMqttAgentHandle();
-                    BaseType_t xResult = pdFALSE;
+                // Prepare the payload
+                char payloadBuf[PAYLOAD_BUF_LEN];
+                int bytesWritten = snprintf(payloadBuf, PAYLOAD_BUF_LEN, "{\"d\":[{\"d\":{\"requests3\":\"True\"}}]}");
 
-                    bytesWritten = snprintf( payloadBuf,
-                                512,
-                            "{\"d\":"\
-                            "[{\"d\":{\"requests3\":\"True\"}}]}");
-
-                    if (bytesWritten < 512) {
-                        xResult = prvPublishAndWaitForAck(xAgentHandle,
-                                                        pcTopicString,
-                                                        payloadBuf,
-                                                        (size_t)bytesWritten
-                    );
-                    } else if (bytesWritten > 0) {
-                        LogError("Not enough buffer space.");
-                    } else {
-                        LogError("MQTT Publish call failed.");
-                    }
-                    if (xResult == pdTRUE) {
-                        LogDebug(payloadBuf);
+                if (bytesWritten < PAYLOAD_BUF_LEN)
+                {
+                    // Publish the payload to the topic
+                    bool result = PublishPayloadToTopic(pcTopicString, payloadBuf, (size_t)bytesWritten);
+                    if (result)
+                    {
+                        LogDebug("Payload: %s", payloadBuf);
                         LogDebug("Topic name: %s", pcTopicString);
                     }
                 }
-
-                LogInfo("Waiting for S3 API Key and Endpoint to be obtained...");
-                while(0 == KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN) ||
-                     0 == KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN))
+                else if (bytesWritten > 0)
                 {
-                    vTaskDelay(1000);
+                    LogError("Not enough buffer space.");
+                }
+                else
+                {
+                    LogError("Failed to construct payload.");
+                }
+                
+                LogInfo("Waiting for S3 API Key and Endpoint to be obtained...");
+
+               // Initialize timeout variables
+                TickType_t xDelay = pdMS_TO_TICKS(RETRY_DELAY_MS);
+                TickType_t xRetryPeriod = pdMS_TO_TICKS(RETRY_PERIOD_MS); // Retry for 30 seconds
+                TimeOut_t xTimeOut;
+
+                vTaskSetTimeOutState(&xTimeOut);
+
+                while (KVStore_getString(CS_S3_API_KEY, pcS3ApiKey, S3_API_KEY_LEN) == 0 ||
+                    KVStore_getString(CS_S3_ENDPOINT, pcS3Endpoint, S3_ENDPOINT_LEN) == 0)
+                {
+                    vTaskDelay(xDelay);
+
+                    if (xTaskCheckForTimeOut(&xTimeOut, &xRetryPeriod) != pdFALSE)
+                    {
+                        // Resend the request
+                        bool result = PublishPayloadToTopic(pcTopicString, payloadBuf, (size_t)bytesWritten);
+                        if (result)
+                        {
+                            LogDebug("Creds request resent : %s", payloadBuf);
+                            LogDebug("Topic name: %s", pcTopicString);
+                        }
+
+                        // Reset timeout variables
+                        xRetryPeriod = pdMS_TO_TICKS(RETRY_PERIOD_MS);
+                        vTaskSetTimeOutState(&xTimeOut);
+                    }
                 }
             }
 
