@@ -45,6 +45,7 @@ def load_and_reformat(wave_path,
         wave : ndarray, output waveform
         sr : int, sample rate of output waveform.'''
 
+     print("[INFO] File: " + wave_path)
      wave, sr = librosa.load(wave_path, sr=target_rate, duration=max_length)
      if len(wave) < sr * min_length and lengthen == 'before':
           print("[INFO] Sound wave shorter than min_length, repeating")
