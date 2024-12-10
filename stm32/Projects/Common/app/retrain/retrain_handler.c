@@ -26,7 +26,7 @@
 /* Timeout for sending messages to the queue (in milliseconds) */
 #define QUEUE_SEND_TIMEOUT_MS 500
 
-/* Maximum size of the audio buffer (64 KB) */
+/* Maximum size of the retrain buffer (64 KB) */
 #define AUDIO_BUFFER_SIZE (64 * 1024)
 
 /* Content type for audio data */
@@ -48,6 +48,12 @@
 #define RETRY_DELAY_MS 1000
 #define RETRY_PERIOD_MS 30000
 
+/* Template for S3 request payload */
+#define S3_REQUEST_PAYLOAD_TEMPLATE "{\"d\":[{\"d\":{\"requests3\":\"True\"}}]}"
+
+/* Template for S3 request topic */
+#define S3_REQUEST_TOPIC_TEMPLATE "$aws/rules/msg_d2c_rpt/%s/2.1/0"
+
 /* ============================ Static Variables ============================ */
 
 /* Internal context structure */
@@ -56,7 +62,7 @@ struct RetrainHandlerContext {
     TaskHandle_t processing_task;       /**< Task handling message processing */
     uint32_t total_messages_processed;  /**< Performance tracking */
     bool is_initialized;                /**< Initialization state */
-    uint8_t audio_buffer[AUDIO_BUFFER_SIZE]; /**< Static buffer for audio data transfer */
+    uint8_t retrain_buffer[AUDIO_BUFFER_SIZE]; /**< Static buffer for retrain data transfer */
 };
 
 /* Static allocation for low-overhead scenarios */
@@ -143,12 +149,12 @@ RetrainHandlerStatus_t RetrainHandler_SetBufferData(const uint8_t* data, size_t 
 
     /* Validate buffer size */
     if (size > AUDIO_BUFFER_SIZE) {
-        LogError("Input data size exceeds audio buffer size: %d", size);
+        LogError("Input data size exceeds retrain buffer size: %d", size);
         return RETRAIN_HANDLER_ERR_BUFFER_OVERFLOW;
     }
 
-    /* Copy data to the audio buffer */
-    memcpy(handler->audio_buffer, data, size);
+    /* Copy data to the retrain buffer */
+    memcpy(handler->retrain_buffer, data, size);
 
     return RETRAIN_HANDLER_OK;
 }
@@ -170,12 +176,12 @@ RetrainHandlerStatus_t RetrainHandler_SetBufferDataWithOffset(const uint8_t* dat
 
     /* Validate buffer size */
     if ((offset + size) > AUDIO_BUFFER_SIZE) {
-        LogError("Input data size exceeds audio buffer size: %d", size);
+        LogError("Input data size exceeds retrain buffer size: %d", size);
         return RETRAIN_HANDLER_ERR_BUFFER_OVERFLOW;
     }
 
-    /* Copy data to the audio buffer at the specified offset */
-    memcpy(&handler->audio_buffer[offset], data, size);
+    /* Copy data to the retrain buffer at the specified offset */
+    memcpy(&handler->retrain_buffer[offset], data, size);
     LogDebug("Buffer set at offset %lu with size %lu", offset, size);
 
     return RETRAIN_HANDLER_OK;
@@ -205,7 +211,7 @@ RetrainHandlerStatus_t RetrainHandler_EnqueueBufferData(const char* classificati
 
     /* Prepare the message */
     RetrainData_t message;
-    message.buffer = handler->audio_buffer;
+    message.buffer = handler->retrain_buffer;
     message.buffer_size = AUDIO_BUFFER_SIZE;
     strncpy(message.classification, classification, RETRAIN_MAX_CLASSIFICATION_LEN);
 
@@ -232,11 +238,12 @@ void vRetrainProcessingTask(void* pvParameters) {
     }
 
     for (;;) {
-        /* Wait for message with timeout */
+        /* Wait for message */
         BaseType_t receive_status = xQueueReceive(handler->retrain_queue, &received_message, portMAX_DELAY);
 
         if (receive_status == pdTRUE) {
-            LogDebug("Retrain data received.\n\rData size: %d", received_message.buffer_size);
+            LogDebug("Retrain data received");
+            LogDebug("Data size: %d", received_message.buffer_size);
 
             int init_result = S3Client_Init();
             if (init_result != S3_CLIENT_SUCCESS) {
@@ -255,7 +262,7 @@ void vRetrainProcessingTask(void* pvParameters) {
                 size_t uxTopicLen = 0;
                 if (uxDevNameLen > 0)
                 {
-                    sprintf(pcTopicString, "$aws/rules/msg_d2c_rpt/%s/2.1/0", pcDeviceId);
+                    sprintf(pcTopicString, S3_REQUEST_TOPIC_TEMPLATE, pcDeviceId);
                     uxTopicLen = strlen(pcTopicString);
                 }
                
@@ -269,7 +276,8 @@ void vRetrainProcessingTask(void* pvParameters) {
 
                 // Prepare the payload
                 char payloadBuf[PAYLOAD_BUF_LEN];
-                int bytesWritten = snprintf(payloadBuf, PAYLOAD_BUF_LEN, "{\"d\":[{\"d\":{\"requests3\":\"True\"}}]}");
+
+                int bytesWritten = snprintf(payloadBuf, PAYLOAD_BUF_LEN, S3_REQUEST_PAYLOAD_TEMPLATE);
 
                 if (bytesWritten < PAYLOAD_BUF_LEN)
                 {
