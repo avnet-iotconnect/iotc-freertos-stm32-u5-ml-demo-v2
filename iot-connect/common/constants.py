@@ -41,7 +41,7 @@ FIRMWARE_ALREADY_EXISTS = "TemplateAlreadyAttachedWithFirmware"
 
 FW_OTA_FILE = "ota/fw.iso"
 FW_PREFIX = "SC"
-MAX_FW_VERSION_SIZE = 8
+MAX_FW_NAME_SIZE = 8
 
 OTA_TARGET_ENTITY = 1
 
