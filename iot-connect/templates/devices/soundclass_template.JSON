@@ -42,7 +42,7 @@
         },
         {
             "name": "Start ML retraining process",
-            "command": "retrain",
+            "command": "retrain_start",
             "requiredParam": true,
             "requiredAck": false,
             "isOTACommand": false

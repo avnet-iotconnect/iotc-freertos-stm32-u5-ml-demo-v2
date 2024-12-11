@@ -158,6 +158,7 @@ export class SagmakerPipeline extends Construct {
         S3_KEY_SECRET_NAME: s3ApiKeySecret.secretName,
         datasetsBucket: dataSetsBucket.bucketName,
         REGION: cdk.Stack.of(this).region,
+        TRAINING_SAMPLE_REPEAT_NUMBER: this.node.tryGetContext('sampleRptNum')
       },
       bundling: {
         esbuildArgs: {
