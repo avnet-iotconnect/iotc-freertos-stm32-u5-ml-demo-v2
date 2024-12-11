@@ -30,3 +30,7 @@ cp -rf ${mlpath}/C_header/* ./stm32/Projects/Common/dpu/
 cp -rf ${mlpath}/stm32ai_files/network*.c ./stm32/Projects/Common/X-CUBE-AI/App/
 cp -rf ${mlpath}/stm32ai_files/network*.h ./stm32/Projects/Common/X-CUBE-AI/App/
 echo Done.
+
+echo Applying the patch at stm32...
+patch ./stm32/Projects/Common/net/mbedtls_transport.c < ./stm32/patches/mbedtls_calloc.patch
+echo Done.
