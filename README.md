@@ -54,6 +54,10 @@ The solution provides automated ML model retraining and consequent firmware upda
 
 Recreate the entire setup as demonstrated in our comprehensive **[ML Audio Classifier Demo Setup Guide](DEMO.md)**.
 
+### Development Environment Setup
+
+For a deeper dive into project development and local compilation, refer to the **[Development Instructions](DEVELOPMENT.md)**.
+
 ## Solution Architecture
 
 <img src="media/architecture.png" alt="drawing"/>
