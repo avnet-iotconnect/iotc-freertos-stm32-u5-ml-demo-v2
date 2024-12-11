@@ -344,6 +344,12 @@ The AWS infrastructure will start the retraining process, which will tale ~40 mi
 
 The push will trigger GitHub action, which will build the firmware and create the OTA Update in the IoTConnect for the device.
 
+### Prerequisites
+
+If we put unrecognized audio sample to the training process - it is not guaranteed that after that ML model will be able to recognize this file. However, if we really want the model to recognize specific audio sample - we can put this single sample a few time to the model. For that purpose the TRAINING_SAMPLE_REPEAT_NUMBER exists in GitHub repository. The higher this number, the higher the probability that this sample will be recognized after the training. Values should be between 1 and 100. To change this number go to GitHub repo Settings -> Secrets and variables -> Actions -> Variables and press on the pencil. Change the value and press "Update variable".
+
+<img src="media/GitHub/var.png" alt="drawing"/>
+
 ### Command
 
 To send retrain command to the device, in IoTConnect go to the device Info tab
