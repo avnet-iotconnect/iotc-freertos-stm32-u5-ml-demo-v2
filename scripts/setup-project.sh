@@ -32,7 +32,5 @@ cp -rf ${mlpath}/stm32ai_files/network*.h ./stm32/Projects/Common/X-CUBE-AI/App/
 echo Done.
 
 echo Applying the patch at stm32...
-sudo install dos2unix
-dos2unix ./stm32/Projects/Common/net/mbedtls_transport.c
 patch ./stm32/Projects/Common/net/mbedtls_transport.c < ./stm32/patches/mbedtls_calloc.patch
 echo Done.
