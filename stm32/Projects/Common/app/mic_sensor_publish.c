@@ -62,7 +62,11 @@
 /* AI includes */
 #include "ai_dpu.h"
 
+/* Retrain handler includes */
 #include "app/retrain/retrain_handler.h"
+
+/* OTA app version header for firmware versioning */
+#include "ota_appversion32.h"
 
 extern UBaseType_t uxRand(void);
 
@@ -79,8 +83,6 @@ extern UBaseType_t uxRand(void);
 
 #define MIC_EVT_DMA_HALF (1 << 0)
 #define MIC_EVT_DMA_CPLT (1 << 1)
-
-#define APP_VERSION "1.4.0"
 
 /**
  * @brief Defines the structure to use as the command callback context in this
@@ -167,6 +169,16 @@ static uint32_t parse_csv_values(const char *payload, const char **values, uint3
  * @return The stripped payload.
  */
 static char* strip_symbols(char *payload, const char symbols[], uint32_t num_symbols);
+
+/**
+ * @brief Returns a string representation of the appFirmwareVersion variable.
+ *
+ * This function returns a pointer to a statically allocated buffer containing
+ * the version string of the appFirmwareVersion variable.
+ *
+ * @return A pointer to the statically allocated buffer containing the version string.
+ */
+static const char* getAppFirmwareVersionString(void);
 /*-----------------------------------------------------------*/
 static void prvPublishCommandCallback(MQTTAgentCommandContext_t *pxCommandContext,
 									  MQTTAgentReturnInfo_t *pxReturnInfo)
@@ -561,6 +573,16 @@ static char* strip_symbols(char *payload, const char symbols[], uint32_t num_sym
     return payload; // Return the stripped payload
 }
 
+static const char* getAppFirmwareVersionString(void)
+{
+    static char versionString[16];
+    snprintf(versionString, sizeof(versionString), "%d.%d.%d",
+             appFirmwareVersion.u.x.major,
+             appFirmwareVersion.u.x.minor,
+             appFirmwareVersion.u.x.build);
+    return versionString;
+}
+
 void vMicSensorPublishTask(void *pvParameters)
 {
 	BaseType_t xResult = pdFALSE;
@@ -670,7 +692,7 @@ void vMicSensorPublishTask(void *pvParameters)
 	bool idle_needs_sending = true;
 
 
-	LogInfo("**** DEMO SOUNDS v%s ****", APP_VERSION);
+	LogInfo("**** DEMO SOUNDS v%s ****", getAppFirmwareVersionString());
 	for (uint32_t clidx = 0; clidx < CTRL_X_CUBE_AI_MODE_CLASS_NUMBER; clidx++) {
 		LogInfo("**** %s [%d]", sAiClassLabels[clidx], confidence_offsets[clidx]);
 	}
@@ -771,8 +793,9 @@ void vMicSensorPublishTask(void *pvParameters)
 			idle_needs_sending = true;
 			bytesWritten = (size_t) snprintf(payloadBuf, (size_t)MQTT_PUBLISH_MAX_LEN,
 					"{\"d\":"\
-					"[{\"d\":{\"version\":\"MLDEMO-" APP_VERSION "\",\"class\":\"%s\",\"confidence\":%d,\"position\":[%s]}}]"\
+					"[{\"d\":{\"version\":\"MLDEMO-%s\",\"class\":\"%s\",\"confidence\":%d,\"position\":[%s]}}]"\
 					",\"mt\":0}",
+					getAppFirmwareVersionString(),
 					detected_class,
 					confidence_score_percent,
 					device_position
@@ -781,8 +804,9 @@ void vMicSensorPublishTask(void *pvParameters)
 			idle_needs_sending = false;
 			bytesWritten = (size_t) snprintf(payloadBuf, (size_t)MQTT_PUBLISH_MAX_LEN,
 					"{\"d\":"\
-					"[{\"d\":{\"version\":\"MLDEMO-" APP_VERSION "\",\"class\":\"%s\",\"confidence\":%d,\"position\":[%s]}}]"\
+					"[{\"d\":{\"version\":\"MLDEMO-%s \",\"class\":\"%s\",\"confidence\":%d,\"position\":[%s]}}]"\
 					",\"mt\":0}",
+					getAppFirmwareVersionString(),
 					"not-active",
 					100,
 					inactive_position
