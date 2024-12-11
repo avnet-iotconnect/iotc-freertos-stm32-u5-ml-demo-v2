@@ -400,6 +400,26 @@ Go to Firmware -> OTA Updates
 
 There you will see OTA Update History including the new update.
 
+### Manual FW Flashing
+
+If OTA updates are not working, you can manually flash the firmware. In repository go to Actions -> Build Firmware and create OTA Update and press on the latest workflow run.
+
+<img src="media/GitHub/build-fw.png" alt="drawing"/>
+
+Wait till the action is finished if it is still in progress. After that refresh the page and you will see "fw.bin" in artifacts. Download it and unzip.
+
+<img src="media/GitHub/fw-bin.png" alt="drawing"/>
+
+- Connect the board with a Micro USB to a PC cable located on the top of the board. Do not connect the USB-C port or the micro USB port at the bottom.
+- Open the STM32CubeProgrammer and connect it to the board by clicking the *Connect* button on the top right.
+- Click the *Erasing&Programming* button (second button on the left sidebar)
+  - Click *Browse* and navigate to your unzipped .bin file.
+  - *Start Address* should be auto-detected to 0x08000000.
+  - Click the *Start Programming* button (see the screenshot below).
+- Once flashing is complete Disconnect the board from the programmer and re-plug the device.
+
+<img src="media/programmer-flash.png" alt="drawing"/>
+
 ## ML Audio Classifier Sensor Nodes
 
 ### Program and Provision

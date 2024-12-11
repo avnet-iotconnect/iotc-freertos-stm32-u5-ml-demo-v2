@@ -60,4 +60,5 @@ Recreate the entire setup as demonstrated in our comprehensive **[ML Audio Class
 
 ## Important Notes
 
-Every time you update firmware source code in main branch - necessarily update the minor revision of the firmware version, e.g. if firmware version is "1.0.2", change it to "1.1.2". Also necessarily delete the "retrained-model" branch, so the retrain flow will use your latest changes in the main branch.
+Every time you update firmware source code in main branch - necessarily update the minor revision of the firmware version. Go to [ota_firmware_version.c](stm32/Projects/b_u585i_iot02a_ntz/Src/ota_pal/ota_firmware_version.c) and increment `APP_VERSION_MINOR`.
+Also necessarily delete the "retrained-model" branch, so the retrain flow will use your latest changes in the main branch.
