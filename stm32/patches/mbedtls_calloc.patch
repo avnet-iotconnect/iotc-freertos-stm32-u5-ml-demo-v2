@@ -18,10 +18,3 @@
  
          if( pxNotifyThreadCtx == NULL )
          {
-@@ -1791,4 +1791,4 @@
- 
-     vLoggingPrintf( pcLogLevel, pcFileBaseName, lLineNumber, pcErrStr );
- }
--#endif /* ifdef MBEDTLS_DEBUG_C */
-\ No newline at end of file
-+#endif /* ifdef MBEDTLS_DEBUG_C */
