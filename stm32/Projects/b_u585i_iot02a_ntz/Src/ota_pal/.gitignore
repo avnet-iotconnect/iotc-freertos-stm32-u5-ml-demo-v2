@@ -2,3 +2,4 @@
 
 !/.gitignore
 !/ota_pal_stm32u5_ntz.c
+!/ota_firmware_version.c
