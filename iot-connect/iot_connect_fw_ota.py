@@ -4,6 +4,7 @@ import argparse
 import requests
 import string
 import random
+from os import fdopen
 
 from common.authentication import authenticate
 from common.constants import (
@@ -18,7 +19,7 @@ from common.constants import (
     FIRMWARE_UPGRADE_PUBLISH,
     OTA_TARGET_ENTITY,
     OTA_UPDATE,
-    MAX_FW_VERSION_SIZE,
+    MAX_FW_NAME_SIZE,
     FIRMWARE_ALREADY_EXISTS,
     DEVICE_SOUND_CLASS,
     FW_UPGRADE
@@ -31,6 +32,12 @@ from common.common import (
 )
 
 
+MAJOR_VERSION_PREFIX = "#define APP_VERSION_MAJOR "
+MINOR_VERSION_PREFIX = "#define APP_VERSION_MINOR "
+BUILD_VERSION_PREFIX = "#define APP_VERSION_BUILD "
+VERSION_FILE_PATH = "../stm32/Projects/b_u585i_iot02a_ntz/Src/ota_pal/ota_firmware_version.c"
+
+
 def iot_connect_fw_ota():
     """Perform IoTConnect FW OTA"""
     args = parse_arguments()
@@ -39,8 +46,8 @@ def iot_connect_fw_ota():
     template_guid = get_template_guid(DEVICE_SOUND_CLASS, access_token)
 
     hw_version = "1.0.0"
-    fw_version = ''.join(random.choices(string.ascii_uppercase + string.digits, k=MAX_FW_VERSION_SIZE))
-    firmware_draft_name = FW_PREFIX + fw_version.replace('.', '')
+    fw_version = read_fw_version()
+    firmware_draft_name = FW_PREFIX + ''.join(random.choices(string.ascii_uppercase + string.digits, k=MAX_FW_NAME_SIZE))
     fw_upgrade_guid = create_firmware_update(template_guid, DEVICE_SOUND_CLASS, firmware_draft_name, fw_version, hw_version, access_token)
     upload_fw_file(fw_upgrade_guid, access_token)
     publish_fw(fw_upgrade_guid, access_token)
@@ -62,6 +69,26 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("solution_key")
     parser.add_argument("entity_name")
     return parser.parse_args()
+
+def read_fw_version() -> str:
+    """Read FW Version"""
+    #Create temp file
+    major = 0
+    minor = 0
+    build = 0
+    with open(VERSION_FILE_PATH) as file:
+        for line in file:
+            if MAJOR_VERSION_PREFIX in line:
+                major = int(line[len(MAJOR_VERSION_PREFIX):])
+                print(f"FW major version is {major}")
+            elif MINOR_VERSION_PREFIX in line:
+                minor = int(line[len(MINOR_VERSION_PREFIX):])
+                print(f"FW minor version is {minor}")
+            elif BUILD_VERSION_PREFIX in line:
+                minor = int(line[len(BUILD_VERSION_PREFIX):])
+                print(f"FW build version is {build}")
+                break
+    return f"{major}.{minor}.{build}"
 
 def create_firmware(device_template_guid: str, firmware_name: str, fw_version: str, hw_version: str, access_token: str,) -> requests.Response:
     """Create new firmware in IoTConnect"""

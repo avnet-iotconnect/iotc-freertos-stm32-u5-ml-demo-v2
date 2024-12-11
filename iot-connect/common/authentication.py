@@ -44,7 +44,6 @@ def get_credentials(username: str, password: str, solution_key: str) -> Credenti
      - password
      - solution key
     """
-    print("Parse command line arguments")
     credentials = Credentials(username, password, solution_key)
     return credentials
 
