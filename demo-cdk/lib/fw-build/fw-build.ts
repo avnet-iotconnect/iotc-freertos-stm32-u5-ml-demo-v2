@@ -3,7 +3,8 @@ import { Construct } from 'constructs';
 import {
     aws_iam,
     aws_logs,
-    aws_codebuild
+    aws_codebuild,
+    Duration
 } from 'aws-cdk-lib';
 import { CfnProject, EventAction, FilterGroup, ComputeType } from "aws-cdk-lib/aws-codebuild";
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -32,6 +33,7 @@ export class FWBuildConstruct extends Construct {
               ),
               computeType: ComputeType.SMALL,
             },
+            timeout: Duration.minutes(20),
             logging: {
               cloudWatch: {
                 logGroup: new aws_logs.LogGroup(this, `IoTBuildLogGroup`),
