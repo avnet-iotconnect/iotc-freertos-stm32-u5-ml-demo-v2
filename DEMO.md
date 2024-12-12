@@ -396,6 +396,19 @@ The AWS infrastructure will start the retraining process, which will take approx
 
 This push will trigger a GitHub Action, which will build the firmware and create the OTA update in IoTConnect for the device.
 
+### Capturing audio data for retraining on the device
+
+To capture audio data for retraining, the `Retrain buffer` has to be fully filled. The `Retrain buffer` copies the audio data from a circular buffer which is 2 seconds long. The copy is made when the ML classifies the captured audio of any class except `other` as `low confidence`. The moment when the `Retrain buffer` is filled and ready to be sent for retraining is indicated by the following log message in the serial terminal:
+
+```
+*** Retrain buffer is fully populated. *** 
+*** The retrain buffer can be sent for retraining. ***
+```
+
+### Sending a retrain command
+
+After the `Retrain buffer` is fully populated, the user can send a retrain command in the `Commands` tab with the specified class to the device using IoTConnect.
+
 ### Prerequisites
 
 If an unrecognized audio sample is added to the training process, it is not guaranteed that the ML model will be able to recognize this file afterward. However, if we want the model to recognize a specific audio sample, we can add this single sample multiple times to the model. 

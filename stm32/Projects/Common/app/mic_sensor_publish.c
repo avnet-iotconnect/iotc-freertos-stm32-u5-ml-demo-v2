@@ -774,7 +774,8 @@ void vMicSensorPublishTask(void *pvParameters)
 					// with the retrain buffer completely filled.
 					if (is_dma_cplt_event(ulNotifiedValue)) {
 						RetrainHandler_SetBufferData(pucAudioBuff, AUDIO_BUFF_SIZE);
-						LogDebug("Retrain buffer is fully populated.");
+						LogInfo("*** Retrain buffer is fully populated. ***");
+						LogInfo("*** The retrain buffer can be sent for retraining. ***");
 					}
 					break;
 				}
