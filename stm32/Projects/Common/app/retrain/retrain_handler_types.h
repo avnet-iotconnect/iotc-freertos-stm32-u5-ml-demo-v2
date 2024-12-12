@@ -13,7 +13,7 @@
 #include <stddef.h>
 
 /** Maximum length for message classification strings */
-#define RETRAIN_MAX_CLASSIFICATION_LEN 32
+#define RETRAIN_MAX_CLASSIFICATION_LEN 40
 
 /** Maximum buffer size for a single message */
 #define RETRAIN_MAX_BUFFER_SIZE (64 * 1024)
