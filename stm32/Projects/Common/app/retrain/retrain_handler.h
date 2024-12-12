@@ -88,6 +88,21 @@ RetrainHandlerStatus_t RetrainHandler_SetBufferDataWithOffset(const uint8_t* dat
 RetrainHandlerStatus_t RetrainHandler_EnqueueBufferData(const char* classification);
 
 /**
+ * @brief Check if the classification is allowed.
+ *
+ * This function checks if the provided classification string is allowed.
+ * It returns false if the classification is prohibited. Some classes are not
+ * suitable to be trained on.
+ *
+ * @param[in] classification Pointer to the classification string.
+ *
+ * @return bool
+ * - true if the classification is allowed.
+ * - false if the classification is prohibited.
+ */
+bool RetrainHandler_IsClassificationAllowed(const char* classification);
+
+/**
  * @brief Get the class name corresponding to the provided index.
  *
  * This function returns a pointer to the class name string from the

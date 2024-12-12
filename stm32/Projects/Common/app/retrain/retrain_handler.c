@@ -12,6 +12,7 @@
 #define LOG_LEVEL LOG_DEBUG
 #include "logging.h"
 
+#include <ctype.h>
 #include "retrain_handler.h"
 #include "mqtt_handler.h"
 #include "app/s3_client/s3_https_client.h"
@@ -88,7 +89,55 @@ static const char* class_list[] = CTRL_X_CUBE_AI_MODE_CLASS_LIST;
  */
 static RetrainHandlerStatus_t prvValidateMessageData(const RetrainData_t* message);
 
+/**
+ * @brief Cross-platform case-insensitive string comparison.
+ *
+ * This function compares two strings in a case-insensitive manner.
+ *
+ * @param[in] s1 Pointer to the first string.
+ * @param[in] s2 Pointer to the second string.
+ *
+ * @return bool
+ * - true if the strings are equal.
+ * - false if the strings are not equal.
+ */
+static bool CaseInsensitiveCompare(const char* s1, const char* s2);
 /* ============================ Function Implementations ============================ */
+
+static bool CaseInsensitiveCompare(const char* s1, const char* s2) {
+    // Iterate through both strings
+    while (*s1 && *s2) {
+        // Convert both characters to lowercase
+        int c1 = tolower((int)*s1);
+        int c2 = tolower((int)*s2);
+        // Compare the characters
+        if (c1 != c2) {
+            return false; // Characters are different
+        }
+        s1++;
+        s2++;
+    }
+    // Check if both strings have reached the end
+    return tolower((int)*s1) == tolower((int)*s2);
+}
+
+bool RetrainHandler_IsClassificationAllowed(const char* classification) {
+    if (classification == NULL) {
+        return false;
+    }
+
+    // List of prohibited classifications
+    const char* prohibited_classes[] = {"other"};
+    size_t num_prohibited = sizeof(prohibited_classes) / sizeof(prohibited_classes[0]);
+
+    // Check if classification is prohibited (case-insensitive)
+    for (size_t i = 0; i < num_prohibited; ++i) {
+        if (CaseInsensitiveCompare(classification, prohibited_classes[i])) {
+            return false;
+        }
+    }
+    return true;
+}
 
 RetrainHandlerStatus_t RetrainHandler_init(void) {
     RetrainHandlerHandle_t handler = &s_default_context;

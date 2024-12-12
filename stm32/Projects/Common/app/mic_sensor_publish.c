@@ -416,8 +416,14 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
 			const char * classification = RetrainHandler_GetClassName((uint8_t)retrain_cmd_arg);
 
 			if(classification){
-				if(RetrainHandler_EnqueueBufferData(classification) == RETRAIN_HANDLER_OK){
-					LogDebug("Retrain data enqueued successfully");
+				// Check if the classification is allowed for retraining
+				if(RetrainHandler_IsClassificationAllowed(classification)){
+					// Enqueue buffer data for retraining if allowed
+					if(RetrainHandler_EnqueueBufferData(classification) == RETRAIN_HANDLER_OK){
+						LogDebug("Retrain data enqueued successfully");
+					}
+				} else {
+					LogError("Retraining for classification not allowed: %s", classification);
 				}
 			}
 			else
