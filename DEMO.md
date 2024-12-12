@@ -257,7 +257,7 @@ In your GitHub repository, go to **Settings -> Secrets and variables -> Actions*
 
 - **AWS_ACCESS_KEY**: The AWS access key you previously created.  
 - **AWS_ACCOUNT_NUMBER**: Your AWS account number.  
-- **AWS_REGION**: The AWS region where you want to deploy the demo.  
+- **AWS_REGION**: The AWS region where you want to deploy the demo. Make sur that the GitHub Connection you created earlier is set for use in this region!
 - **AWS_SECRET_ACCESS_KEY**: The AWS secret access key you previously created.  
 - **GIT_ARN**: The ARN of the GitHub connection in AWS.  
 - **IOT_CONNECT_CERTIFICATE**: The certificate you captured from the device.  
