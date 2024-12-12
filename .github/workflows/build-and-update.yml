@@ -15,7 +15,9 @@ jobs:
           fetch-depth: 2
 
       - name: Setup tools
-        run: ./scripts/setup-project.sh
+        run: |
+          apt install dos2unix
+          ./scripts/setup-project.sh
 
       - name: Build Firmware
         working-directory: ./stm32

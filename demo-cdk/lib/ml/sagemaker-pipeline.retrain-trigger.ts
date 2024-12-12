@@ -1,6 +1,9 @@
 import { CodeBuild, SSM, SecretsManager } from 'aws-sdk';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 
+const maxSmplRptNum = 100
+const minSmplRptNum = 1
+
 //change to real values
 const datasetPath = 'train/datasets/FSD50K/';
 
@@ -9,7 +12,7 @@ const datasetPath = 'train/datasets/FSD50K/';
 const codebuild = new CodeBuild();
 const ssm = new SSM();
 
-const { projectName, S3_KEY_SECRET_NAME, REGION, datasetsBucket }: any = process.env;
+const { projectName, S3_KEY_SECRET_NAME, datasetsBucket, REGION, TRAINING_SAMPLE_REPEAT_NUMBER }: any = process.env;
 const s3 = new S3Client({ region: REGION });
 const secretsManager = new SecretsManager();
 
@@ -124,11 +127,22 @@ exports.handler = async (event: any) => {
     };
     await s3.send(new PutObjectCommand(audioParams));
 
+    var smplRptNum = +TRAINING_SAMPLE_REPEAT_NUMBER;
+    if (smplRptNum < minSmplRptNum) {
+        smplRptNum = minSmplRptNum;
+    } else if (smplRptNum > maxSmplRptNum) {
+        smplRptNum = maxSmplRptNum;
+    }
+
     // Compose new row for dev.csv
     const newRow = `${timestamp},"${soundClasses}","${mids.join(',')}",train\n`;
 
-    // Append new row to dev.csv
-    const updatedDevData = devData + newRow;
+    var updatedDevData = devData;
+    // Append new row to dev.csv smplRptNum times
+    for (var index = 0; index < smplRptNum; index++) {
+        updatedDevData = updatedDevData + newRow;
+    }
+
     const devParams = {
         Bucket: datasetsBucket,
         Key: `${datasetPath}FSD50K.ground_truth/dev.csv`,

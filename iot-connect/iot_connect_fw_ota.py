@@ -85,7 +85,7 @@ def read_fw_version() -> str:
                 minor = int(line[len(MINOR_VERSION_PREFIX):])
                 print(f"FW minor version is {minor}")
             elif BUILD_VERSION_PREFIX in line:
-                minor = int(line[len(BUILD_VERSION_PREFIX):])
+                build = int(line[len(BUILD_VERSION_PREFIX):])
                 print(f"FW build version is {build}")
                 break
     return f"{major}.{minor}.{build}"

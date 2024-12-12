@@ -33,6 +33,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Prepare Lambda layer
+        run: |
+          mkdir -p "iot-connect-layer/python"
+          cp -R "iot-connect/common" "iot-connect-layer/python"
+          ls -la "iot-connect-layer/python"
+          ls -la "iot-connect-layer/python/common"
+
       - name: Deploy cdk bootstrap stack
         working-directory: ./demo-cdk
         run: cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_NUMBER }}/${{ secrets.AWS_REGION }} --toolkit-stack-name CDKToolkit-StMicro --qualifier stmicro
