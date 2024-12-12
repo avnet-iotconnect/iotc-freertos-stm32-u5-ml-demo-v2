@@ -6,11 +6,11 @@ Avnet's Smart City Noise Detection Solution harnesses the power of IoT and AI to
 
 ## Project Scope
 
-Originally developed from a collaborative GitHub project with AWS, this local version allows for streamlined, on-site operation using pre-generated AI model files under STMicroelectronics' [SLA0044 license](https://www.st.com/resource/en/license/SLA0044_SE-MW.pdf). This approach enhances the flexibility and responsiveness of urban noise management systems. The system provides ability to retrain AI model based on new data.
+Originally developed from a collaborative GitHub project with AWS, this local version allows for streamlined, on-site operation using pre-generated AI model files under STMicroelectronics' [SLA0044 license](https://www.st.com/resource/en/license/SLA0044_SE-MW.pdf). This approach enhances the flexibility and responsiveness of urban noise management systems. The system provides the ability to retrain the AI model based on new data.
 
 ### Recognized Sounds
 
-Our AI model efficiently identifies critical urban sounds including:
+Our AI model efficiently identifies critical urban sounds, including:
 
 - Alarms
 - Dog Barking
@@ -38,15 +38,15 @@ Our solution is designed to seamlessly integrate with existing urban surveillanc
 
 ### Powered by IoTConnect and AWS
 
-The backbone of this solution is Avnet's IoTConnect platform and AWS, which guarantees scalability, data privacy, and ease of deployment across various urban settings.
+The backbone of this solution is Avnet's IoTConnect platform and AWS, which guarantee scalability, data privacy, and ease of deployment across various urban settings.
 
 ### Automatic Deployment
 
-The solution provides templates and GitHub actions for the automatic infrastructure deployment into the AWS and IoTConnect.
+The solution provides templates and GitHub Actions for automatic infrastructure deployment into AWS and IoTConnect.
 
 ### Retraining
 
-The solution provides automated ML model retraining and consequent firmware update based on the input data collected by the STM32U5 board itself.
+The solution provides automated ML model retraining and subsequent firmware updates based on the input data collected by the STM32U5 board itself.
 
 ## Getting Started
 
@@ -64,5 +64,6 @@ For a deeper dive into project development and local compilation, refer to the *
 
 ## Important Notes
 
-Every time you update firmware source code in main branch - necessarily update the minor revision of the firmware version. Go to [ota_firmware_version.c](stm32/Projects/b_u585i_iot02a_ntz/Src/ota_pal/ota_firmware_version.c) and increment `APP_VERSION_MINOR`.
-Also necessarily delete the "retrained-model" branch, so the retrain flow will use your latest changes in the main branch.
+Every time you update the firmware source code in the main branch, make sure to update the minor revision of the firmware version. Go to [ota_firmware_version.c](stm32/Projects/b_u585i_iot02a_ntz/Src/ota_pal/ota_firmware_version.c) and increment `APP_VERSION_MINOR`.
+
+Also, be sure to delete the "retrained-model" branch, so the retrain flow will use your latest changes in the main branch.

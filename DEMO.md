@@ -12,31 +12,31 @@ This guide outlines the steps to recreate the demo.
 
 ## Deployment Prerequisites
 
-The project is built using GitHub actions, CDK IaC and IoTConnect REST API. So it can be deployed to your AWS account directly from the GitHub.
+The project is built using GitHub Actions, CDK IaC, and the IoTConnect REST API, so it can be deployed to your AWS account directly from GitHub.
 
-**Note** This Project was only tested on region `eu-west-2`
+**Note:** This project was only tested in the `eu-west-2` region.
 
 ### AWS Setup
 
 #### GitHub Connection
 
-It is necessary to set up a connection between the pipeline and your forked Repo
+It is necessary to set up a connection between the pipeline and your forked repository.
 
-1. Follow the steps to create & verify the connection [here](https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html)
-2. Copy created Connection Arn. We will need it during the GitHub Secrets setup
+1. Follow the steps to create and verify the connection [here](https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html).  
+2. Copy the created connection ARN. You will need it during the GitHub Secrets setup.
 
 #### Credentials
 
-Now lets create AWS Credentials. In AWS go to IAM Service.
+Now let's create AWS Credentials. In AWS Management Console, go to the IAM Service.
 
 <img src="media/AWS/iam.png" alt="drawing"/>
 
-Start with creating the Policy.
+Start by creating the Policy.
 
-1. Go to Policies and press "Create policy"
+1. Go to Policies and click "Create policy"
    <img src="media/AWS/press-create-policy.png" alt="drawing"/>
 
-2. In Policy editor switch to JSON and paste the bellow text into it. Check https://github.com/aws/aws-cdk/issues/21937 for possible changes in required policies. And press "Next".
+2. In the "Policy editor", switch to JSON and paste the text below into it. Check [this GitHub issue](https://github.com/aws/aws-cdk/issues/21937) for possible changes in required policies. Then click "Next".
 
    ```
    {
@@ -130,61 +130,62 @@ Start with creating the Policy.
 
    <img src="media/AWS/policy-permissions.png" alt="drawing"/>
 
-3. Give the policy a name, e.g. "CDK_Deploy", and press "Create policy"
+3. Give the policy a name, e.g., "CDK_Deploy," and click "Create policy".
    <img src="media/AWS/policy-name.png" alt="drawing"/>
 
-Now create the user group
+Now, create the user group
 
-1. In IAM go to User groups and press "Create group"
+1. In IAM, go to User groups and click "Create group".
    <img src="media/AWS/press-create-group.png" alt="drawing"/>
-2. Give group a name, e.g. "CDK_Deploy" and in "Attach permissions policies" find and check the polucy you created earlier
+2. Give the group a name, e.g., "CDK_Deploy," and in "Attach permissions policies," find and check the policy you created earlier.
    <img src="media/AWS/group.png" alt="drawing"/>
-3. Press "Create user group"
+3. Click "Create user group"
 
-Now create the user
+Now, create the user
 
-1. In IAM go to Users and press "Create user"
+1. In IAM, go to Users and click "Create user"
    <img src="media/AWS/press-create-user.png" alt="drawing"/>
-2. Give user a name, e.g. "cdk-deploy" and press "Next"
+2. Give the user a name, e.g., "cdk-deploy," and click "Next".
    <img src="media/AWS/user-name.png" alt="drawing"/>
-3. On the next step find a check the group you previously created, press "Next"
+3. On the next step, find and check the group you previously created, then click "Next".
    <img src="media/AWS/user-add-group.png" alt="drawing"/>
-4. On the next step press "Create user"
+4. On the next step, click "Create user".
    <img src="media/AWS/user-create.png" alt="drawing"/>
 
-Now create an access key and a secret access key for the new user.
+Now, create an access key and a secret access key for the new user.
 
-1. In IAM go to Users and press on the prebiously created user
+1. In IAM, go to Users and click on the previously created user.
    <img src="media/AWS/new-user.png" alt="drawing"/>
-2. Go to Security credentials and press "Create access key"
+2. Go to Security credentials and click "Create access key".
    <img src="media/AWS/press-create-key.png" alt="drawing"/>
-3. Choose "Command Line Interface (CLI)" Use case, check the confirmation and press "Next"
+3. Choose the "Command Line Interface (CLI)" Use case, check the confirmation, and click "Next".
    <img src="media/AWS/key-use-case.png" alt="drawing"/>
-4. Fill the Description tag value if you want and press "Create access key"
+4. Fill in the Description tag value if desired, and click "Create access key".
    <img src="media/AWS/key-create.png" alt="drawing"/>
-5. Copy and save both "Access key" and "Secret access key", you will need them later and press "Done"
+5. Copy and save both the "Access key" and "Secret access key". You will need them later, then click "Done".
    <img src="media/AWS/key-copy.png" alt="drawing"/>
 
 ### ST Account Setup
 
 ST Cloud credentials:
 
-- Create an account in [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home)
-- Login and accept an agreement
-- Copy login and password, you will need them later
+- Create an account in [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home).
+- Log in and accept the agreement.
+- Copy the login and password, you will need them later.
 
 ### IoTConnect Setup
 
-You should have account in Avnet IoTConnect powered by AWS. Retreive the following things from IoTConnect account:
+You should have an account in Avnet IoTConnect powered by AWS. Retrieve the following items from your IoTConnect account:
 
-- Solution key
-- Login
-- Password
-- Entity name
+- Solution key  
+- Login  
+- Password  
+- Entity name  
 
-Uou will need it later.
+You will need these later.
 
-If you don't have the solution key - in IoT Connect go to Support Ticket -> Other Support and create ticket with title "Please, create the solution key" and description "Hello! We need to use REST API for our solution. Can you, please, create the solution key?" and press "Save". Support team will create the solution key for you.
+If you don't have the solution key, go to IoTConnect, navigate to **Support Ticket -> Other Support**, and create a ticket with the title "Please, create the solution key" and the description: "Hello! We need to use REST API for our solution. Can you, please, create the solution key?".
+Then click "Save". The support team will create the solution key for you.
 
 <img src="media/IoTConnect/create-ticket.png" alt="drawing"/>
 
@@ -250,22 +251,22 @@ sSi6
 
 ### Credentials Preparation
 
-Before the solution can be deployed to the cloud it is necessary to provide the credentials into the GitHub secrets.
+Before the solution can be deployed to the cloud, it is necessary to provide the credentials in the GitHub secrets.
 
-In GitHub repository go to Settings -> Secrets and variables -> Actions and fill the secret values:
+In your GitHub repository, go to **Settings -> Secrets and variables -> Actions** and fill in the secret values:
 
-- AWS_ACCESS_KEY: AWS access key you previously
-- AWS_ACCOUNT_NUMBER: AWS account number
-- AWS_REGION: AWS region in which you want to deploy the demo
-- AWS_SECRET_ACCESS_KEY: AWS secret access key you previously
-- GIT_ARN: ARN of the GitHub connection in the AWS
-- IOT_CONNECT_CERTIFICATE: the certificate you captured from the device
-- IOT_CONNECT_ENTITY_NAME: your Entity name in the IoTConnect account
-- IOT_CONNECT_PASSWORD: your password for IoTConnect account
-- IOT_CONNECT_SOLUTION_KEY: your solution key in the IoTConnect account
-- IOT_CONNECT_USERNAME: your login for IoTConnect account
-- STDEVCLOUD_PASSWORD: your password for [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home) account
-- STDEVCLOUD_USERNAME: your login for [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home) account
+- **AWS_ACCESS_KEY**: The AWS access key you previously created.  
+- **AWS_ACCOUNT_NUMBER**: Your AWS account number.  
+- **AWS_REGION**: The AWS region where you want to deploy the demo.  
+- **AWS_SECRET_ACCESS_KEY**: The AWS secret access key you previously created.  
+- **GIT_ARN**: The ARN of the GitHub connection in AWS.  
+- **IOT_CONNECT_CERTIFICATE**: The certificate you captured from the device.  
+- **IOT_CONNECT_ENTITY_NAME**: Your entity name in the IoTConnect account.  
+- **IOT_CONNECT_PASSWORD**: Your password for the IoTConnect account.  
+- **IOT_CONNECT_SOLUTION_KEY**: Your solution key in the IoTConnect account.  
+- **IOT_CONNECT_USERNAME**: Your login for the IoTConnect account.  
+- **STDEVCLOUD_PASSWORD**: Your password for your [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home) account.  
+- **STDEVCLOUD_USERNAME**: Your login for your [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home) account.
 
 <img src="media/GitHub/secrets.png" alt="drawing"/>
 
@@ -273,17 +274,19 @@ In GitHub repository go to Settings -> Secrets and variables -> Actions and fill
 
 ### CDK Bootstrap
 
-The deploy should start from the CDK bootstrap. In repository go to Actions -> Bootstrap CDK. Press on the "Run workflow" dropdown, choose main branch and press "Run workflow".
+The deployment should start with the CDK bootstrap. In the repository, go to **Actions -> Bootstrap CDK**, click on the "Run workflow" dropdown, select the main branch, and click "Run workflow".
 
 <img src="media/GitHub/bootstrap.png" alt="drawing"/>
 
-Wait till the action is finished.
+Wait untill the action is finished.
 
 <img src="media/GitHub/bootstrap-finished.png" alt="drawing"/>
 
 #### Troubleshooting
 
-If action is failed most likely credentials in secrets are wrong or policy created previously is wrong. AWS sometimes update permissions list needed for the CDK bootstrap. You can avoid this issue by changing the policy to allow all possible action on all possible resources - but keep in mind that it is not good practise.
+If the action fails, it is most likely because the credentials in the secrets are incorrect or the policy created previously is wrong. AWS occasionally updates the permissions list needed for the CDK bootstrap. 
+
+You can avoid this issue by changing the policy to allow all possible actions on all resources—however, keep in mind that this is not a good practice.
 
 ```
 {
@@ -298,58 +301,58 @@ If action is failed most likely credentials in secrets are wrong or policy creat
 
 ### Deploy
 
-Now the solution could be deployed.
+Now the solution can be deployed.
 
-In repository go to Actions -> Solution Deploy. Press on the "Run workflow" dropdown, choose main branch and press "Run workflow".
+In the repository, go to **Actions -> Solution Deploy**, click on the "Run workflow" dropdown, select the main branch, and click "Run workflow".
 
-This action will deploy infrastructure to the AWS and IoTConnect.
+This action will deploy the infrastructure to AWS and IoTConnect.
 
 <img src="media/GitHub/deploy.png" alt="drawing"/>
 
-Wait till the action is finished.
+Wait untill the action is finished.
 
 <img src="media/GitHub/deploy-finished.png" alt="drawing"/>
 
-After action is successfuly finished, the audio files download process will be automatically started in the AWS. You can't start retraining process before this process is finished. It usually takes from 30 to 60 minutes. To check the downloading progress, you can go to CodeBuild in AWS.
+After the action is successfully finished, the audio file download process will automatically start in AWS. You cannot start the retraining process until this process is finished. It usually takes 30 to 60 minutes. To check the download progress, go to CodeBuild in AWS.
 
 <img src="media/AWS/aws-codebuild.png" alt="drawing"/>
 
-Go to "Build projects" and press on the "DownloadBuild" project.
+Go to "Build projects" and click on the "DownloadBuild" project.
 
 <img src="media/AWS/download-build.png" alt="drawing"/>
 
-Press on the build run which is "in Progress"
+Click on the build run that is "In Progress".
 
 <img src="media/AWS/download-in-progress.png" alt="drawing"/>
 
-You will see the downloading log. The process order:
+You will see the download log. The process order is as follows:
 
-1. Downloading Dev Audio (6 parts)
-2. Downloading Eval Audio
-3. Downloading Ground Truth
-4. Unzipping
-5. Uploading to S3
+1. Downloading Dev Audio (6 parts)  
+2. Downloading Eval Audio  
+3. Downloading Ground Truth  
+4. Unzipping  
+5. Uploading to S3  
 
-When you will see in the log "Phase complete: BUILD State: SUCCEEDED" - the files are in S3, which means that you can start the retraining.
+When you see in the log "Phase complete: BUILD State: SUCCEEDED," the files are in S3, which means you can start the retraining.
 
 ### Configuring Device Connection Parameters
 
-Now it is necessary to configure the Device Connection Parameters. In IoTConnect go to the device Info tab
+Now, it is necessary to configure the Device Connection Parameters. In IoTConnect, go to the **Device Info** tab.
 
 <img src="media/IoTConnect/device.png" alt="drawing"/>
 
-Go to the Devices and press on the "soundclass" device.
+Go to **Devices** and click on the "soundclass" device.
 
 <img src="media/IoTConnect/device-soundclass.png" alt="drawing"/>
 
-Press on the "Connection info".
+Click on **Connection info**.
 
 <img src="media/IoTConnect/connection-info.png" alt="drawing"/>
 
-Note the following values in the device Connection info screen which we will use for the device runtime configuration in the next steps:
+Note the following values from the **Connection info** screen, which will be used for the device runtime configuration in the next steps:
 
-- Your Unique Device ID that you used to create the device will be used as thing_name.
-- Host, which will be used for the mqtt_endpoint value.
+- **Your Unique Device ID**: This will be used as `thing_name`.  
+- **Host**: This will be used as the `mqtt_endpoint` value.
 
 <img src="media/IoTConnect/connection-info-screen.png" alt="drawing"/>
 
@@ -369,25 +372,29 @@ The device should connect at this point, and you should be able to see data in t
 
 ## Retraining
 
-The solution provides the retraining functionality. If some sounds are not recognized properly, user can send retrain command to the device from the IoTConnect. The Device will upload not properly recognized audio file to the AWS with the proper classification, which is provided in the command issued by the user.
+The solution provides retraining functionality. If some sounds are not recognized properly, the user can send a retrain command to the device from IoTConnect. The device will upload the improperly recognized audio file to AWS with the correct classification provided in the command issued by the user.
 
-The AWS infrastructure will start the retraining process, which will tale ~40 minutes. After that the AWS will push the new ML model prepared for the firmware to the GitHub repository, branch "retrained-model".
+The AWS infrastructure will start the retraining process, which will take approximately 40 minutes. After that, AWS will push the new ML model prepared for the firmware to the GitHub repository under the branch "retrained-model".
 
-The push will trigger GitHub action, which will build the firmware and create the OTA Update in the IoTConnect for the device.
+This push will trigger a GitHub Action, which will build the firmware and create the OTA update in IoTConnect for the device.
 
 ### Prerequisites
 
-If we put unrecognized audio sample to the training process - it is not guaranteed that after that ML model will be able to recognize this file. However, if we really want the model to recognize specific audio sample - we can put this single sample a few time to the model. For that purpose the TRAINING_SAMPLE_REPEAT_NUMBER exists in GitHub repository. The higher this number, the higher the probability that this sample will be recognized after the training. Values should be between 1 and 100. To change this number go to GitHub repo Settings -> Secrets and variables -> Actions -> Variables and press on the pencil. Change the value and press "Update variable".
+If an unrecognized audio sample is added to the training process, it is not guaranteed that the ML model will be able to recognize this file afterward. However, if we want the model to recognize a specific audio sample, we can add this single sample multiple times to the model. 
+
+For this purpose, the `TRAINING_SAMPLE_REPEAT_NUMBER` variable exists in the GitHub repository. The higher this number, the greater the probability that the sample will be recognized after training. The values should be between 1 and 100. 
+
+To change this number, go to **GitHub repo Settings -> Secrets and variables -> Actions -> Variables** and click on the pencil icon. Change the value and click "Update variable".
 
 <img src="media/GitHub/var.png" alt="drawing"/>
 
 ### Command
 
-To send retrain command to the device, in IoTConnect go to the device Info tab
+To send a retrain command to the device, go to the **Device Info** tab in IoTConnect.
 
 <img src="media/IoTConnect/device.png" alt="drawing"/>
 
-Open Commands and in the "Command Execution" fill the fields:
+Open **Commands**, and in the "Command Execution" section, fill in the fields:
 
 - Device Template: "soundclass"
 - Selected devices: "soundclass"
@@ -399,51 +406,51 @@ Open Commands and in the "Command Execution" fill the fields:
   - 4 for Race car and auto racing
   - 5 for Vehicle horn and car horn and honking
 
-Press "Execute Command"
+Click "Execute Command".
 
 <img src="media/IoTConnect/retrain-cmd.png" alt="drawing"/>
 
-Sending this command to the device will trigger the retrain process.
+Sending this command to the device will trigger the retraining process.
 
 ### Checking Progress
 
-Retraning process include a few steps. The retraining itself could me monitored in the CodeBuild.
+The retraining process includes several steps. The retraining itself can be monitored in **CodeBuild**.
 
-Go to CodeBuild in AWS.
+Go to **CodeBuild** in AWS.
 
 <img src="media/AWS/aws-codebuild.png" alt="drawing"/>
 
-Go to "Build projects" and press on the "SagemakePipeline" project.
+Go to "Build projects" and click on "SagemakePipeline" project.
 
 <img src="media/AWS/sgmkr-ppln.png" alt="drawing"/>
 
-You will see the Build run in Progress. This step usually takes ~30 minutes.
+You will see the build run in progress. This step usually takes approximately 30 minutes.
 
-After Sagemaker Pipeline is finished, the "PushCode" code build will be triggered, which will push new model to the GitHub repository, branch "retrained-model". This step usually takes ~30 seconds.
+After the SageMaker pipeline is finished, the "PushCode" CodeBuild will be triggered, which will push the new model to the GitHub repository under the branch "retrained-model". This step usually takes approximately 30 seconds.
 
-After code is pushed, GitHub action Build Firmware and create OTA Update will be triggered. Go to GitHub repository -> Actions -> Build Firmware and create OTA Update and press on the run in progress.
+After the code is pushed, the GitHub Action **Build Firmware and create OTA Update** will be triggered. Go to **GitHub repository -> Actions -> Build Firmware and create OTA Update**, and click on the run in progress.
 
 <img src="media/GitHub/build-fw.png" alt="drawing"/>
 
-There you can press on the job in progress and it's log. This step usually takes ~4 minutes.
+There, you can click on the job in progress to view its log. This step usually takes approximately 4 minutes.
 
-After this action is finished, the OTA Update will be created for the device in IoTConnect. Go to IoTConnect, the device Info tab
+After this action is finished, the OTA update will be created for the device in IoTConnect. Go to IoTConnect and navigate to the **Device Info** tab.
 
 <img src="media/IoTConnect/device.png" alt="drawing"/>
 
-Go to Firmware -> OTA Updates
+Go to **Firmware -> OTA Updates**.
 
 <img src="media/IoTConnect/ota-updates.png" alt="drawing"/>
 
-There you will see OTA Update History including the new update.
+There, you will see the OTA Update history, including the new update.
 
 ### Manual FW Flashing
 
-If OTA updates are not working, you can manually flash the firmware. In repository go to Actions -> Build Firmware and create OTA Update and press on the latest workflow run.
+If OTA updates are not working, you can manually flash the firmware. In the repository, go to **Actions -> Build Firmware and create OTA Update**, and click on the latest workflow run.
 
 <img src="media/GitHub/build-fw.png" alt="drawing"/>
 
-Wait till the action is finished if it is still in progress. After that refresh the page and you will see "fw.bin" in artifacts. Download it and unzip.
+Wait until the action is finished if it is still in progress. After that, refresh the page, and you will see "fw.bin" in the artifacts. Download it and unzip it.
 
 <img src="media/GitHub/fw-bin.png" alt="drawing"/>
 
@@ -461,7 +468,7 @@ Wait till the action is finished if it is still in progress. After that refresh 
 
 ### Program and Provision
 
-Follow the [Quickstart Guide](https://github.com/avnet-iotconnect/iotc-freertos-stm32-u5-ml-demo/blob/main/QUICKSTART.md) to flash the STM32U5 Discovery Kit and provision audio classifier devices into IoTConnect.
+Follow the above section to flash the STM32U5 Discovery Kit.
 
 ### Device Commands
 
