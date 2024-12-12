@@ -70,7 +70,7 @@ If you want to deploy the AWS CDK from your local PC, you will need the followin
 - **STDEVCLOUD_USERNAME**: Your login for your [STM32Cube.AI Developer Cloud](https://stm32ai-cs.st.com/home) account (see "ST Account Setup" section in **[Demo Guide](DEMO.md)**).
 - **TRAINING_SAMPLE_REPEAT_NUMBER**: Number - how many times to you want to put the unrecognized sample to the retraining process.
 
-Configure you AWS Credentials, see https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html.
+Configure your AWS Credentials, see https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html.
 
 #### Bootstrap the AWS CDK
 
