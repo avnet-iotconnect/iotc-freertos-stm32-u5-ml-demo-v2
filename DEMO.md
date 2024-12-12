@@ -257,7 +257,7 @@ In your GitHub repository, go to **Settings -> Secrets and variables -> Actions*
 
 - **AWS_ACCESS_KEY**: The AWS access key you previously created.  
 - **AWS_ACCOUNT_NUMBER**: Your AWS account number.  
-- **AWS_REGION**: The AWS region where you want to deploy the demo. Make sur that the GitHub Connection you created earlier is set for use in this region!
+- **AWS_REGION**: The AWS region where you want to deploy the demo. **Make sure that the GitHub Connection you created earlier is set for use in this region!**
 - **AWS_SECRET_ACCESS_KEY**: The AWS secret access key you previously created.  
 - **GIT_ARN**: The ARN of the GitHub connection in AWS.  
 - **IOT_CONNECT_CERTIFICATE**: The certificate you captured from the device.  
@@ -335,6 +335,24 @@ You will see the download log. The process order is as follows:
 
 When you see in the log "Phase complete: BUILD State: SUCCEEDED," the files are in S3, which means you can start the retraining.
 
+#### Troubleshooting
+
+If **Solution Deploy** GitHub Action fails with the following reason:
+
+`Failed to call CreateWebhook, reason: Access token not found in CodeBuild project for server type github (Service: AWSCodeBuild; Status Code: 400; Error Code: ResourceNotFoundException`
+
+This means that the GitHub Connection is set for using in other region. To allow using it in your region, in AWS, go to the **CodeBuild**.
+
+<img src="media/AWS/aws-codebuild.png" alt="drawing"/>
+
+Go to the **Settings -> Connections** and click on your connection.
+
+<img src="media/AWS/connection.png" alt="drawing"/>
+
+In **Use this connection** change the region to the desired.
+
+<img src="media/AWS/connection-region.png" alt="drawing"/>
+
 ### Configuring Device Connection Parameters
 
 Now, it is necessary to configure the Device Connection Parameters. In IoTConnect, go to the **Device Info** tab.
@@ -382,7 +400,7 @@ This push will trigger a GitHub Action, which will build the firmware and create
 
 If an unrecognized audio sample is added to the training process, it is not guaranteed that the ML model will be able to recognize this file afterward. However, if we want the model to recognize a specific audio sample, we can add this single sample multiple times to the model. 
 
-For this purpose, the `TRAINING_SAMPLE_REPEAT_NUMBER` variable exists in the GitHub repository. The higher this number, the greater the probability that the sample will be recognized after training. The values should be between 1 and 100. 
+For this purpose, the `TRAINING_SAMPLE_REPEAT_NUMBER` variable exists in the GitHub repository. The higher this number, the greater the probability that the sample will be recognized after training. The values should be between 1 and 100. **WARNING**: Remember, the stronger you train the model for a specific sample, the worse the model will recognize other sounds in other categories. In other words, the higher the `TRAINING_SAMPLE_REPEAT_NUMBER`, the worse the model performs on all other sounds.
 
 To change this number, go to **GitHub repo Settings -> Secrets and variables -> Actions -> Variables** and click on the pencil icon. Change the value and click "Update variable".
 
