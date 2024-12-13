@@ -42,6 +42,9 @@
 /* Maximum number of custom headers */
 #define MAX_CUSTOM_HEADERS 10       
 
+/* HTTP status code for a successful response */
+#define HTTP_STATUS_CODE_OK 200
+
 /* AWS S3 Configuration */
 #define S3_HTTPS_PORT 443                /**< AWS S3 HTTPS Port */
 
@@ -340,7 +343,13 @@ int S3Client_Post(const char *hostnameWithPath, const char *payload,
     /* Check transmission result */
     if (https_status != HTTPSuccess) {
         LogError("Payload upload failed! HTTP Status: %s", HTTPClient_strerror(https_status));
-        return S3_CLIENT_HTTP_ERROR;
+        return S3_CLIENT_NETWORK_ERROR;
+    }
+
+    /* Check HTTP response code */
+    if (response.statusCode != HTTP_STATUS_CODE_OK) {
+        LogError("Received non-200 HTTP response code: %d", response.statusCode);
+        return S3_CLIENT_BAD_RESPONSE;
     }
 
     /* Optional: Response dump for debugging */

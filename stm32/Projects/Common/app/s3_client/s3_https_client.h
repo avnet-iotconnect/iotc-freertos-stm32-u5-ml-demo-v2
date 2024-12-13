@@ -48,6 +48,9 @@ typedef struct {
 /** @brief Input parameters related errors */
 #define S3_CLIENT_INVALID_PARAM  -5  /**< Error processing input parameters*/
 
+/** @brief Server returned a bad response */
+#define S3_CLIENT_BAD_RESPONSE   -6  /**< Server returned an error response */
+
 
 /**
  * @brief Initializes the S3 client module.
