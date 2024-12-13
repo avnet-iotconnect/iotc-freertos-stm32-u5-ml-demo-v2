@@ -123,4 +123,19 @@ const char* RetrainHandler_GetClassName(uint8_t index);
  */
 void vRetrainProcessingTask(void* pvParameters);
 
+/**
+ * @brief Block writing to the retrain buffer.
+ *
+ * This function sets a flag to block any further writing to the retrain buffer.
+ * It can be used to prevent modifications to the buffer.
+ */
+void RetrainHandler_BlockBufferWrite(void);
+
+/**
+ * @brief Unblock writing to the retrain buffer.
+ *
+ * This function clears the flag that blocks writing to the retrain buffer.
+ */
+void RetrainHandler_UnblockBufferWrite(void);
+
 #endif // RETRAIN_HANDLER_H

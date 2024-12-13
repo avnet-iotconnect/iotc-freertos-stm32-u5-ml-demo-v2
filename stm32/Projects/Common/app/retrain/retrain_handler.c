@@ -72,7 +72,8 @@
 struct RetrainHandlerContext {
     QueueHandle_t retrain_queue;        /**< FreeRTOS queue handle */
     TaskHandle_t processing_task;       /**< Task handling message processing */
-    uint32_t total_messages_processed;  /**< Performance tracking */
+    bool is_buffer_populated;           /**< Indicates if the retrain buffer is populated */
+    bool is_write_blocked;              /**< Indicates if writing to the retrain buffer is blocked */
     bool is_initialized;                /**< Initialization state */
     uint8_t retrain_buffer[AUDIO_BUFFER_SIZE]; /**< Static buffer for retrain data transfer */
 };
@@ -195,10 +196,9 @@ RetrainHandlerStatus_t RetrainData_enqueue(const RetrainData_t* message) {
 RetrainHandlerStatus_t RetrainHandler_SetBufferData(const uint8_t* data, size_t size) {
     RetrainHandlerHandle_t handler = &s_default_context;
 
-    /* Check if handler is initialized */
-    if (!handler->is_initialized) {
-        LogError("Handler is not initialized");
-        return RETRAIN_HANDLER_ERR_INVALID_BUFFER;
+      if (handler->is_write_blocked) {
+        LogError("Writing to retrain buffer is blocked. Unblock writing before attempting to set buffer data.");
+        return RETRAIN_HANDLER_ERR_WRITE_BLOCKED;
     }
 
     /* Validate input data */
@@ -215,17 +215,16 @@ RetrainHandlerStatus_t RetrainHandler_SetBufferData(const uint8_t* data, size_t 
 
     /* Copy data to the retrain buffer */
     memcpy(handler->retrain_buffer, data, size);
-
+    handler->is_buffer_populated = true;
     return RETRAIN_HANDLER_OK;
 }
 
 RetrainHandlerStatus_t RetrainHandler_SetBufferDataWithOffset(const uint8_t* data, size_t size, size_t offset) {
     RetrainHandlerHandle_t handler = &s_default_context;
 
-    /* Check if handler is initialized */
-    if (!handler->is_initialized) {
-        LogError("Handler is not initialized");
-        return RETRAIN_HANDLER_ERR_INVALID_BUFFER;
+    if (handler->is_write_blocked) {
+        LogError("Writing to retrain buffer is blocked. Unblock writing before attempting to set buffer data.");
+        return RETRAIN_HANDLER_ERR_WRITE_BLOCKED;
     }
 
     /* Validate input data */
@@ -242,6 +241,7 @@ RetrainHandlerStatus_t RetrainHandler_SetBufferDataWithOffset(const uint8_t* dat
 
     /* Copy data to the retrain buffer at the specified offset */
     memcpy(&handler->retrain_buffer[offset], data, size);
+    handler->is_buffer_populated = true;
     LogDebug("Buffer set at offset %lu with size %lu", offset, size);
 
     return RETRAIN_HANDLER_OK;
@@ -250,9 +250,15 @@ RetrainHandlerStatus_t RetrainHandler_SetBufferDataWithOffset(const uint8_t* dat
 RetrainHandlerStatus_t RetrainHandler_EnqueueBufferData(const char* classification) {
     RetrainHandlerHandle_t handler = &s_default_context;
 
-    /* Check if handler is initialized */
+    /* Check if handler is initialized to avoid using unitialized queue*/
     if (!handler->is_initialized) {
-        LogError("Handler is not initialized");
+        LogError("Handler is not initialized. Call RetrainHandler_init() before using this function.");
+        return RETRAIN_HANDLER_ERR_NOT_INITIALIZED;
+    }
+
+    /* Check if buffer is populated */
+    if (!handler->is_buffer_populated) {
+        LogError("Retrain buffer is not populated. Ensure that the buffer is populated before enqueuing data.");
         return RETRAIN_HANDLER_ERR_INVALID_BUFFER;
     }
 
@@ -473,4 +479,16 @@ const char* RetrainHandler_GetClassName(uint8_t index) {
     }
 
     return class_list[index - 1];
+}
+
+void RetrainHandler_BlockBufferWrite(void) {
+    RetrainHandlerHandle_t handler = &s_default_context;
+
+    handler->is_write_blocked = true;
+}
+
+void RetrainHandler_UnblockBufferWrite(void) {
+    RetrainHandlerHandle_t handler = &s_default_context;
+
+    handler->is_write_blocked = false;
 }
