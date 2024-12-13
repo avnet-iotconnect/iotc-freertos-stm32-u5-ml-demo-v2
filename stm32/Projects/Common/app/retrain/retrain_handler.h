@@ -8,8 +8,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-// Opaque handle for message handler
-typedef struct RetrainHandlerContext* RetrainHandlerHandle_t;
 
 /**
  * @brief Initialize the retrain handler.

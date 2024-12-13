@@ -15,9 +15,6 @@
 /** Maximum length for message classification strings */
 #define RETRAIN_MAX_CLASSIFICATION_LEN 40
 
-/** Maximum buffer size for a single message */
-#define RETRAIN_MAX_BUFFER_SIZE (64 * 1024)
-
 /** 
  * @brief Error codes 
  */
@@ -35,6 +32,12 @@ typedef enum {
 
     // Processing Errors
     RETRAIN_HANDLER_ERR_INVALID_MESSAGE,  ///< Message fails validation
+
+    // Writing Errors
+    RETRAIN_HANDLER_ERR_WRITE_BLOCKED,     ///< Writing operation is blocked
+
+    // Initialization Errors
+    RETRAIN_HANDLER_ERR_NOT_INITIALIZED   ///< Handler not initialized
 } RetrainHandlerStatus_t;
 
 /** 

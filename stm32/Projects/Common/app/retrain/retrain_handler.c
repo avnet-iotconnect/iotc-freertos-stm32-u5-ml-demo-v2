@@ -19,7 +19,13 @@
 #include "ai_model_config.h"
 #include "kvstore.h"
 
+// Handle for retrain handler
+typedef struct RetrainHandlerContext* RetrainHandlerHandle_t;
+
 /* ============================ Constants and Macros ============================ */
+
+/** Maximum buffer size for a single message */
+#define RETRAIN_MAX_BUFFER_SIZE (64 * 1024)
 
 /* Maximum size of the message queue */
 #define MAX_QUEUE_SIZE 10
@@ -432,7 +438,7 @@ void vRetrainProcessingTask(void* pvParameters) {
                     vTaskDelay(retry_delay); // Wait before retrying
                     retry_count++;
                 } else if (result == S3_CLIENT_BAD_RESPONSE) {
-                    LogError("Failed to send retraind data due to server bad response.");
+                    LogError("Failed to send retrain data due to server bad response.");
                     LogError("Check if ongoing retrain process is completed.");
                     LogError("Server can handle only one retrain process at a time.");
                     break; // Exit loop on bad server response
