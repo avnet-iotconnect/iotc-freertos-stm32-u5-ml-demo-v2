@@ -50,7 +50,7 @@ def creds_provider_handler(event, context):
 def send_command(command_guid: str, endpoint_url: str, api_key: str, entity_guid: str, access_token: str):
     """Create device in IoTConnect from given data"""
 
-    parameter_value = f"{endpoint_url.replace("https://", '')},{api_key}"
+    parameter_value = f"{endpoint_url.replace("https://", '')} {api_key}"
 
     data = {
         "commandGuid": command_guid,
