@@ -15,7 +15,7 @@
 #include "logging_levels.h"
 
 /* Define LOG_LEVEL here if you want to modify the logging level from the default */
-#define LOG_LEVEL LOG_DEBUG
+#define LOG_LEVEL LOG_INFO
 
 #include "s3_https_client.h"
 #include "logging.h"

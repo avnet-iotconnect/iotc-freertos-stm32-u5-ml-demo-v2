@@ -9,7 +9,7 @@
 #include "logging_levels.h"
 
 /* Define LOG_LEVEL here if you want to modify the logging level from the default */
-#define LOG_LEVEL LOG_DEBUG
+#define LOG_LEVEL LOG_INFO
 #include "logging.h"
 
 #include <ctype.h>
@@ -279,7 +279,7 @@ RetrainHandlerStatus_t RetrainHandler_EnqueueBufferData(const char* classificati
         return RETRAIN_HANDLER_ERR_INVALID_MESSAGE;
     }
 
-    LogDebug("Enqueuing buffer data with classification: %s", classification);
+    LogInfo("Enqueuing buffer data with classification: %s", classification);
 
     /* Prepare the message */
     RetrainData_t message;
