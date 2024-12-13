@@ -396,18 +396,30 @@ The AWS infrastructure will start the retraining process, which will take approx
 
 This push will trigger a GitHub Action, which will build the firmware and create the OTA update in IoTConnect for the device.
 
-### Capturing audio data for retraining on the device
+### Capturing Audio Data for Retraining on the Device
 
-To capture audio data for retraining, the `Retrain buffer` has to be fully filled. The `Retrain buffer` copies the audio data from a circular buffer which is 2 seconds long. The copy is made when the ML classifies the captured audio of any class except `other` as `low confidence`. The moment when the `Retrain buffer` is filled and ready to be sent for retraining is indicated by the following log message in the serial terminal:
+To capture audio data for retraining, a sample sound should be played and captured by the audio buffer. This captured audio data is then copied into the `Retrain buffer`. The copy occurs when the ML model classifies the captured audio as belonging to any class (except `other`) with a `low confidence` score.
+
+Once the `Retrain buffer` is full and ready to be sent, the following log message will appear in the serial terminal:
 
 ```
 *** Retrain buffer is fully populated. *** 
 *** The retrain buffer can be sent for retraining. ***
 ```
 
-### Sending a retrain command
+### Sending a Retrain Command
 
-After the `Retrain buffer` is fully populated, the user can send a retrain command in the `Commands` tab with the specified class to the device using IoTConnect.
+**Warning:** If the `Retrain buffer` is not populated, it **cannot** be sent for retraining. The buffer must be fully populated before the retrain process can proceed.
+
+After the `Retrain buffer` is fully populated, the user can initiate the retraining process by sending the **"Start ML retraining process"** command in the device's `Command` tab. The user should specify the desired class as an argument and send it to the device via IoTConnect. The available class arguments are:
+
+- **1** for Alarm
+- **2** for Bark
+- **3** for Liquid
+- **4** for Race car and auto racing
+- **5** for Vehicle horn, car horn, and honking
+
+For example, to retrain the model on the "Alarm" class, the user would send the retrain command with the argument `1`.
 
 ### Prerequisites
 
