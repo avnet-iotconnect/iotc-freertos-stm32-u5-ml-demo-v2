@@ -144,18 +144,20 @@ static bool is_dma_half_event(uint32_t notifiedValue);
 static bool is_dma_cplt_event(uint32_t notifiedValue);
 
 /**
- * @brief Parses the payload to find comma-separated values.
+ * @brief Parse the values separated by the provided separator.
  *
- * This function parses the given payload to find comma-separated values and returns
- * a pointer to them with their lengths. It also returns the number of items found.
+ * This function parses the given payload to find values separated by the specified
+ * separator and returns pointers to them with their lengths. It also returns the
+ * number of items found.
  *
  * @param payload The payload to parse.
  * @param values An array of pointers to store the start of each value.
  * @param lengths An array to store the length of each value.
  * @param max_values The maximum number of values to parse.
+ * @param separator The character used to separate values in the payload.
  * @return The number of items found.
  */
-static uint32_t parse_csv_values(const char *payload, const char **values, uint32_t *lengths, uint32_t max_values);
+static uint32_t parse_values_with_separator(const char *payload, const char **values, uint32_t *lengths, uint32_t max_values, char separator);
 
 /**
  * @brief Strips provided symbols from the payload at the endings.
@@ -438,6 +440,7 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
         // Arrays to store the lengths and values of the credentials
         uint32_t length[KEYS_NUM];
         const char *values[KEYS_NUM];
+		const char values_separator = ' ';
         // Symbols to be stripped from the arguments
         char symbols[] = {'"', ' ', '{', '}'};
         char* args = NULL;
@@ -448,7 +451,7 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
         args = strip_symbols(args, symbols, sizeof(symbols));
 
         // Parse the CSV values from the arguments
-        uint32_t count = parse_csv_values((const char *)args, values, length, KEYS_NUM);
+        uint32_t count = parse_values_with_separator((const char *)args, values, length, KEYS_NUM, values_separator);
         if (count == KEYS_NUM) {
             LogInfo("Received new S3 credentials");
 
@@ -464,7 +467,12 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
             KVStore_setString(CS_S3_ENDPOINT, endpoint_buffer);
             KVStore_setString(CS_S3_API_KEY, api_key_buffer);
 
-			// TODO: Commit the changes to the key-value store
+			Commit the new credentials to the key-value store
+			if (KVStore_xCommitChanges() == pdTRUE) {
+				LogInfo("S3 credentials committed successfully.");
+			} else {
+				LogError("Failed to commit S3 credentials.");
+			}
         } else {
             LogError("Failed to parse S3 credentials. Expected items num %d, got %d", KEYS_NUM, count);
         }
@@ -519,13 +527,18 @@ static bool is_dma_cplt_event(uint32_t notifiedValue) {
     return (notifiedValue & MIC_EVT_DMA_CPLT) != 0;
 }
 
-static uint32_t parse_csv_values(const char *payload, const char **values, uint32_t *lengths, uint32_t max_values) {
+static uint32_t parse_values_with_separator(const char *payload, const char **values, uint32_t *lengths, uint32_t max_values, char separator) {
+	if (payload == NULL || values == NULL || lengths == NULL) {
+		LogError("Invalid input: payload, values, or lengths is NULL. Ensure all input pointers are properly initialized.");
+        return 0; // Return 0 if any input pointer is null
+    }
+
     uint32_t count = 0; // Initialize count of parsed values
     const char *start = payload; // Pointer to the start of the current value
     const char *end = NULL; // Pointer to the end of the current value
 
-    // Loop to parse values separated by commas
-    while (count < max_values && (end = strchr(start, ',')) != NULL) {
+    // Loop to parse values separated by the provided separator
+    while (count < max_values && (end = strchr(start, separator)) != NULL) {
         values[count] = start; // Store the start of the value
         lengths[count] = (size_t)(end - start); // Calculate and store the length of the value
         count++; // Increment the count of parsed values
