@@ -450,7 +450,7 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
         // Strip unwanted symbols from the arguments
         args = strip_symbols(args, symbols, sizeof(symbols));
 
-        // Parse the CSV values from the arguments
+        // Parse values from the arguments
         uint32_t count = parse_values_with_separator((const char *)args, values, length, KEYS_NUM, values_separator);
         if (count == KEYS_NUM) {
             LogInfo("Received new S3 credentials");
@@ -467,7 +467,7 @@ static void on_c2d_message( void * subscription_context, MQTTPublishInfo_t * pub
             KVStore_setString(CS_S3_ENDPOINT, endpoint_buffer);
             KVStore_setString(CS_S3_API_KEY, api_key_buffer);
 
-			Commit the new credentials to the key-value store
+			// Commit the new credentials to the key-value store
 			if (KVStore_xCommitChanges() == pdTRUE) {
 				LogInfo("S3 credentials committed successfully.");
 			} else {
