@@ -30,30 +30,41 @@
 /* Maximum size of the retrain buffer (64 KB) */
 #define AUDIO_BUFFER_SIZE (64 * 1024)
 
-/* Content type for audio data */
+/* Content type header for audio data */
 #define CONTENT_TYPE_AUDIO "audio/wav"
 
+/* Maximum length for S3 API key strings */
 #define S3_API_KEY_LEN 255
+
+/* Maximum length for S3 endpoint strings */
 #define S3_ENDPOINT_LEN 255
 
-/* Maximum length for device ID string */
+/* Maximum length for device ID strings */
 #define DEVICE_ID_LEN 64
 
-/* Maximum length for topic string */
+/* Maximum length for topic strings */
 #define TOPIC_STRING_LEN 256
 
 /* Maximum length for payload buffer */
 #define PAYLOAD_BUF_LEN 512
 
-/* Retry delay and period in milliseconds */
+/* Delay between retries when waiting for S3 credentials (in milliseconds) */
 #define RETRY_DELAY_MS 1000
+
+/* Total retry period when waiting for S3 credentials (in milliseconds) */
 #define RETRY_PERIOD_MS 30000
 
-/* Template for S3 request payload */
+/* Template string for S3 request payload */
 #define S3_REQUEST_PAYLOAD_TEMPLATE "{\"d\":[{\"d\":{\"requests3\":\"True\"}}]}"
 
-/* Template for S3 request topic */
+/* Template string for S3 request topic */
 #define S3_REQUEST_TOPIC_TEMPLATE "$aws/rules/msg_d2c_rpt/%s/2.1/0"
+
+/* Maximum number of retries for posting data to S3 */
+#define MAX_RETRY_COUNT 3
+
+/* Delay between retries for posting data to S3 (in milliseconds) */
+#define RETRY_DELAY_POST_MS 10000
 
 /* ============================ Static Variables ============================ */
 
@@ -392,15 +403,39 @@ void vRetrainProcessingTask(void* pvParameters) {
                 {"sound-classes", received_message.classification} // Use received classification
             };
 
-            int result = S3Client_Post(
-                pcS3Endpoint,
-                received_message.buffer,
-                received_message.buffer_size,
-                headers,
-                sizeof(headers) / sizeof(headers[0])
-            );
+            int result;
+            int retry_count = 0;
+            const int max_retries = MAX_RETRY_COUNT;
+            const TickType_t retry_delay = pdMS_TO_TICKS(RETRY_DELAY_POST_MS); // Retry delay of 10 seconds
 
-            LogDebug("S3Client_Post completed with result: %d", result);
+            do {
+                // Attempt to send data to S3
+                result = S3Client_Post(
+                    pcS3Endpoint,
+                    received_message.buffer,
+                    received_message.buffer_size,
+                    headers,
+                    sizeof(headers) / sizeof(headers[0])
+                );
+
+                if (result == S3_CLIENT_SUCCESS) {
+                    LogDebug("S3Client_Post succeeded");
+                    break; // Exit loop on success
+                } else if (result == S3_CLIENT_NETWORK_ERROR) {
+                    LogError("S3Client_Post network error, retrying in 10 seconds...");
+                    vTaskDelay(retry_delay); // Wait before retrying
+                    retry_count++;
+                } else if (result == S3_CLIENT_BAD_RESPONSE) {
+                    LogError("Failed to send retraind data due to server bad response.");
+                    LogError("Check if ongoing retrain process is completed.");
+                    LogError("Server can handle only one retrain process at a time.");
+                    break; // Exit loop on bad server response
+                }
+            } while (retry_count < max_retries);
+
+            if (result != S3_CLIENT_SUCCESS) {
+                LogError("Failed to send data after %d retries", retry_count);
+            }
             
             int disconnect_result = S3Client_Disconnect();
             if (disconnect_result != S3_CLIENT_SUCCESS) {
