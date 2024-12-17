@@ -193,8 +193,8 @@ Then click "Save". The support team will create the solution key for you.
 
 ### Firmware Flashing and Getting Certificate
 
-- Download and install a serial console application (TeraTerm for example) and STM32CubeProgrammer
-- Download and extract [b_u585i_iot02a_ntz_v1_4_1.zip](https://saleshosted.z13.web.core.windows.net/demo/st/b_u585i_iot02a_ntz_v1_4_0.zip) !!!!!!!!!TBD!!!!!!!!!
+- Download and install a serial console application (TeraTerm for example) and STM32CubeProgrammer.
+- Download and extract [b_u585i_iot02a_ntz_ml_01.zip](https://saleshosted.z13.web.core.windows.net/demo/st/b_u585i_iot02a_ntz-ml-01.zip).
 - This is a non-TFM project. If tustzone is enabled on your board, please disable before programming.
 - Connect the board with a Micro USB to a PC cable located on the top of the board. Do not connect the USB-C port or the micro USB port at the bottom.
 - Open the STM32CubeProgrammer and connect it to the board by clicking the *Connect* button on the top right.
@@ -413,9 +413,9 @@ After the `Retrain buffer` is fully populated, the user can send a retrain comma
 
 If an unrecognized audio sample is added to the training process, it is not guaranteed that the ML model will be able to recognize this file afterward. However, if we want the model to recognize a specific audio sample, we can add this single sample multiple times to the model. 
 
-For this purpose, the `TRAINING_SAMPLE_REPEAT_NUMBER` variable exists in the GitHub repository. The higher this number, the greater the probability that the sample will be recognized after training. The values should be between 1 and 100. **WARNING**: Remember, the stronger you train the model for a specific sample, the worse the model will recognize other sounds in other categories. In other words, the higher the `TRAINING_SAMPLE_REPEAT_NUMBER`, the worse the model performs on all other sounds.
+For this purpose, the `TRAINING_SAMPLE_REPEAT_NUMBER` variable exists in the GitHub repository. The higher this number, the greater the probability that the sample will be recognized after training. The values should be between 1 and 100. Tests show that usually number 100 is enough for model to be trained for the specific sound. **WARNING**: Remember, the stronger you train the model for a specific sample, the worse the model will recognize other sounds in other categories. In other words, the higher the `TRAINING_SAMPLE_REPEAT_NUMBER`, the worse the model performs on all other sounds.
 
-To change this number, go to **GitHub repo Settings -> Secrets and variables -> Actions -> Variables** and click on the pencil icon. Change the value and click "Update variable".
+To change this number, go to **GitHub repo Settings -> Secrets and variables -> Actions -> Variables** and click on the pencil icon. Change the value and click "Update variable". After changing the value it is necessary to deploy changes using the **Solution Deploy** GitHub Action.
 
 <img src="media/GitHub/var.png" alt="drawing"/>
 
