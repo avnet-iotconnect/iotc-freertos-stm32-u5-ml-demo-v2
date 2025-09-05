@@ -1,69 +1,89 @@
-# Avnet's Smart City Noise Detection Solution: Harnessing IoT and AI
+# Audio Classification: Cloud AI Retraining Pushed to the Edge Example
 
 ## Introduction
 
-Avnet's Smart City Noise Detection Solution harnesses the power of IoT and AI to tackle the growing challenges of noise pollution and public safety in urban environments. By integrating advanced sensor technologies and real-time analytics, this solution provides city authorities with effective tools to monitor and mitigate noise disturbances, thereby enhancing the quality of life for residents and improving urban safety. Leveraging the robust capabilities of the B-U585I-IOT02A Discovery kit with STM32U5 Secure MCU for IoT, our solution is designed to deliver actionable insights, ensuring scalable, secure, and efficient urban management.
+This repository contains the **IoTConnect + FreeRTOS STM32U5 ML demo** for real‑time urban noise classification and over‑the‑air (OTA) lifecycle management. It combines:
+- **Device firmware** for the ST **B‑U585I‑IOT02A Discovery kit** (STM32U5 Secure MCU),
+- **Infrastructure‑as‑code (AWS CDK)** to stand up retraining and delivery pipelines,
+- **IoTConnect automation scripts** to provision device templates, rules, and OTA jobs.
+
+The demo is built to deliver **actionable insights** with low latency at the edge while preserving a secure, scalable path to iterate models in production.
 
 ## Project Scope
 
-Originally developed from a collaborative GitHub project with AWS, this local version allows for streamlined, on-site operation using pre-generated AI model files under STMicroelectronics' [SLA0044 license](https://www.st.com/resource/en/license/SLA0044_SE-MW.pdf). This approach enhances the flexibility and responsiveness of urban noise management systems. The system provides the ability to retrain the AI model based on new data.
+Originally developed from a collaborative GitHub project with AWS, this local version enables streamlined, on‑site operation using **pre‑generated AI model files** under STMicroelectronics’ [SLA0044 license](https://www.st.com/resource/en/license/SLA0044_SE-MW.pdf). The system also supports **automatic model retraining from new field data**, letting you improve accuracy without replacing devices.
 
 ### Recognized Sounds
 
-Our AI model efficiently identifies critical urban sounds, including:
+The supplied models detect representative urban events, including:
 
 - Alarms
 - Dog Barking
 - Rushing Water
-- Race Car Noise / Auto Racing
-- Vehicle horns
+- Race Car / Auto Racing
+- Vehicle Horns
+
+> You can extend or refine the classes through the retraining flow described below.
 
 ### Telemetry and Confidence Reporting
 
-Telemetry includes a confidence metric, reflecting the accuracy of noise classification in real-time. Dynamic confidence thresholds can be adjusted either globally or for individual classifications, ensuring the reliability of data on urban noise levels.
+Each classification publishes a **confidence** value. Thresholds can be **tuned per class** so you can balance sensitivity vs. false positives for your deployment.
 
 ## Key Features
 
 ### Optimized for Efficiency: Local Processing Advantages
 
-For immediate testing and use on your STM32U5 series board, this project facilitates a straightforward local setup with pre-generated AI model files, eliminating the need for complex cloud integrations. Local classification significantly reduces latency, minimizes cloud and connectivity costs, and lowers power consumption. The system is meticulously designed to be low-powered, making it suitable for deployment as either a battery-powered solution or an energy-harvesting setup. This ensures efficient operation and enhances the sustainability of the urban noise monitoring system.
+The firmware runs inference **on‑device** (STM32U5), reducing latency, cloud traffic, and power draw—ideal for battery or energy‑harvested use cases.
 
 ### Advanced Noise Classification
 
-By leveraging state-of-the-art acoustic sensitivity coupled with advanced AI algorithms, our system excels in distinguishing between various urban sounds—from traffic noises to human activity. This intelligent noise classification enables precise identification of noise types, allowing city officials to implement targeted interventions for specific sources of noise pollution. The capability to accurately classify sounds ensures responses tailored to the nature of the noise, thereby optimizing the effectiveness of noise management strategies in urban environments.
+Signal processing and embedded ML distinguish between noisy urban environments and target events, enabling targeted responses and richer city analytics.
 
 ### Harmonized System Integration
 
-Our solution is designed to seamlessly integrate with existing urban surveillance infrastructure, augmenting city-wide noise monitoring and management capabilities. This integration facilitates a unified approach to city management, where audio monitoring complements visual surveillance, providing a comprehensive sensory overview of urban environments. By enhancing existing systems with our sophisticated noise detection technology, cities can achieve a more holistic view of public spaces, leading to better-informed decisions and more effective urban planning and safety measures.
+Designed to complement your existing monitoring stack, this solution adds audio intelligence alongside video or telemetry feeds for a more complete picture.
 
 ### Powered by IoTConnect and AWS
 
-The backbone of this solution is Avnet's IoTConnect platform and AWS, which guarantee scalability, data privacy, and ease of deployment across various urban settings.
+IoTConnect provides device management, rules, and OTA; AWS provides the managed backbone for training, data, and CI/CD automation.
 
 ### Automatic Deployment
 
-The solution provides templates and GitHub Actions for automatic infrastructure deployment into AWS and IoTConnect.
+Included **GitHub Actions** and **AWS CDK** templates provision cloud resources and wire up the demo end‑to‑end with minimal manual steps.
 
-### Retraining
+### Retraining (Enhanced since the first release)
 
-The solution provides automated ML model retraining and subsequent firmware updates based on the input data collected by the STM32U5 board itself.
+This version focuses on **closing the loop** from field data to an improved model on the device:
+
+- **Push‑button pipeline**: New/unknown audio samples collected by the device are routed to the cloud and trigger a retraining workflow.
+- **Controllable sample emphasis**: Use the CDK context parameter **`TRAINING_SAMPLE_REPEAT_NUMBER`** to up‑weight difficult or unknown samples during training.¹
+- **Automated packaging & delivery**: The trained model is compiled for STM32 (via ST DevCloud), firmware is rebuilt, and an **OTA update** is published through IoTConnect.
+- **Branch‑based promotion**: The **`retrained-model`** branch acts as the integration gate for the build‑and‑update workflow; delete it after merging to ensure the next retrain picks up your latest changes.²
+
+> See **Getting Started** for links to the step‑by‑step Demo and Development guides.
 
 ## Getting Started
 
 ### Full Demonstration Setup
 
-Recreate the entire setup as demonstrated in our comprehensive **[ML Audio Classifier Demo Setup Guide](DEMO.md)**.
+Recreate the end‑to‑end environment (device, cloud, and dashboards) following the **[ML Audio Classifier Demo Setup Guide](DEMO.md)**.²
 
 ### Development Environment Setup
 
-For a deeper dive into project development and local compilation, refer to the **[Development Instructions](DEVELOPMENT.md)**.
+Build locally, run the CDK, and invoke IoTConnect automation using the **[Development Instructions](DEVELOPMENT.md)**.¹
 
 ## Solution Architecture
 
-<img src="media/architecture.png" alt="drawing"/>
+<img src="media/architecture.png" alt="Solution Architecture Diagram"/>
 
 ## Important Notes
 
-Every time you update the firmware source code in the main branch, make sure to update the minor revision of the firmware version. Go to [ota_firmware_version.c](stm32/Projects/b_u585i_iot02a_ntz/Src/ota_pal/ota_firmware_version.c) and increment `APP_VERSION_MINOR`.
+- When updating firmware in `main`, increment `APP_VERSION_MINOR` in  
+  `stm32/Projects/b_u585i_iot02a_ntz/Src/ota_pal/ota_firmware_version.c`.²
+- Delete the **`retrained-model`** branch after each retrain cycle so subsequent retrains incorporate your latest `main` changes.²
 
-Also, be sure to delete the "retrained-model" branch, so the retrain flow will use your latest changes in the main branch.
+---
+
+¹ The `TRAINING_SAMPLE_REPEAT_NUMBER` CDK parameter and CDK/CLI usage are documented in the Development guide.  
+² The retrain workflow, `retrained-model` usage, and versioning instructions are documented in the current README and Demo guide.
+
